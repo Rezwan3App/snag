@@ -1,8 +1,8 @@
-# DealDrop 🎯
+# YTScan 🎯
 
 **Find promo codes buried in YouTube videos — without watching the full thing.**
 
-DealDrop is a locally-hosted web app. You paste a YouTube video URL (or add a channel), it scans the transcript, and pulls out every discount code, sponsor offer, and limited-time deal — with the exact timestamp so you can jump straight to it.
+YTScan is a locally-hosted web app. You paste a YouTube video URL (or add a channel), it scans the transcript, and pulls out every discount code, sponsor offer, and limited-time deal — with the exact timestamp so you can jump straight to it.
 
 ## Why it works locally
 
@@ -11,7 +11,7 @@ YouTube blocks transcript requests from cloud servers. Running this on your own 
 ## Features (MVP)
 
 - **Scan a single video** — paste any YouTube URL, get all deals in seconds
-- **Watch a channel** — add a channel URL and DealDrop scans its latest videos automatically
+- **Watch a channel** — add a channel URL and YTScan scans its latest videos automatically
 - **Scan all channels** — one click to refresh everything
 - **Jump to timestamp** — every deal shows exactly when it was mentioned
 - **Copy promo code** — one click copy
@@ -52,7 +52,7 @@ Open `http://localhost:4242` in your browser.
 
 ### Watch a channel
 1. Paste a YouTube channel URL (e.g. `https://www.youtube.com/@mkbhd`)
-2. Click **Add Channel** — DealDrop scans the latest 5 videos immediately
+2. Click **Add Channel** — YTScan scans the latest 5 videos immediately
 3. Click **Scan All Channels** anytime to refresh
 
 ## Next iteration

@@ -1,856 +1,845 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DealDrop</title>
-    <style>
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-      :root {
-        --bg:         #080809;
-        --surface:    #0f0f11;
-        --surface2:   #18181b;
-        --surface3:   #222226;
-        --border:     #2a2a30;
-        --border2:    #3a3a42;
-        --red:        #ff3b3b;
-        --red-dim:    rgba(255,59,59,.12);
-        --red-glow:   rgba(255,59,59,.25);
-        --green:      #22c55e;
-        --green-dim:  rgba(34,197,94,.12);
-        --amber:      #f59e0b;
-        --amber-dim:  rgba(245,158,11,.12);
-        --text:       #e8e8ec;
-        --text2:      #a0a0ac;
-        --text3:      #606068;
-        --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
-        --radius-sm: 8px;
-        --radius:    14px;
-        --radius-lg: 20px;
-      }
-
-      html { scroll-behavior: smooth; }
-
-      body {
-        background: var(--bg);
-        color: var(--text);
-        font-family: var(--font);
-        font-size: 14px;
-        min-height: 100vh;
-        line-height: 1.5;
-        -webkit-font-smoothing: antialiased;
-      }
-
-      /* ── Topbar ────────────────────────────────────────────── */
-      .topbar {
-        height: 60px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 0 28px;
-        background: rgba(8,8,9,.85);
-        backdrop-filter: blur(16px);
-        border-bottom: 1px solid var(--border);
-        position: sticky;
-        top: 0;
-        z-index: 100;
-      }
-
-      .topbar-logo {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        text-decoration: none;
-      }
-
-      .logo-mark {
-        width: 32px; height: 32px;
-        border-radius: 9px;
-        background: var(--red);
-        display: grid; place-items: center;
-        font-size: 16px;
-        box-shadow: 0 0 18px var(--red-glow);
-        flex-shrink: 0;
-      }
-
-      .logo-name {
-        font-size: 16px;
-        font-weight: 800;
-        letter-spacing: -0.4px;
-        color: var(--text);
-      }
-
-      .topbar-divider {
-        width: 1px; height: 20px;
-        background: var(--border);
-        margin: 0 6px;
-      }
-
-      .topbar-tagline {
-        font-size: 13px;
-        color: var(--text3);
-      }
-
-      .topbar-right {
-        margin-left: auto;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      /* ── Layout ────────────────────────────────────────────── */
-      .layout {
-        display: grid;
-        grid-template-columns: 340px 1fr;
-        gap: 0;
-        min-height: calc(100vh - 60px);
-      }
-
-      .sidebar {
-        border-right: 1px solid var(--border);
-        padding: 24px 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-        overflow-y: auto;
-        position: sticky;
-        top: 60px;
-        max-height: calc(100vh - 60px);
-      }
-
-      .main {
-        padding: 24px 28px;
-        overflow-y: auto;
-      }
-
-      @media (max-width: 800px) {
-        .layout { grid-template-columns: 1fr; }
-        .sidebar { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
-        .topbar-tagline { display: none; }
-      }
-
-      /* ── Section label ─────────────────────────────────────── */
-      .section-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 12px;
-      }
-
-      .section-title {
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.8px;
-        text-transform: uppercase;
-        color: var(--text3);
-      }
-
-      /* ── Card ──────────────────────────────────────────────── */
-      .card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        overflow: hidden;
-      }
-
-      .card-body { padding: 16px; }
-
-      /* ── Input group ───────────────────────────────────────── */
-      .input-group {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-
-      .input {
-        flex: 1;
-        height: 40px;
-        padding: 0 14px;
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        color: var(--text);
-        font-size: 13px;
-        font-family: var(--font);
-        outline: none;
-        transition: border-color .15s, box-shadow .15s;
-        min-width: 0;
-      }
-
-      .input:focus {
-        border-color: var(--red);
-        box-shadow: 0 0 0 3px var(--red-dim);
-      }
-
-      .input::placeholder { color: var(--text3); }
-
-      /* ── Buttons ───────────────────────────────────────────── */
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        height: 40px;
-        padding: 0 16px;
-        border: none;
-        border-radius: var(--radius-sm);
-        font-size: 13px;
-        font-weight: 700;
-        font-family: var(--font);
-        cursor: pointer;
-        white-space: nowrap;
-        transition: opacity .15s, transform .1s, box-shadow .15s;
-        text-decoration: none;
-      }
-
-      .btn:active { transform: scale(0.97); }
-      .btn:disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
-
-      .btn-primary {
-        background: var(--red);
-        color: #fff;
-        box-shadow: 0 2px 12px var(--red-glow);
-      }
-
-      .btn-primary:hover { opacity: .9; box-shadow: 0 4px 20px var(--red-glow); }
-
-      .btn-ghost {
-        background: var(--surface2);
-        color: var(--text2);
-        border: 1px solid var(--border);
-      }
-
-      .btn-ghost:hover { border-color: var(--border2); color: var(--text); }
-
-      .btn-icon {
-        width: 32px; height: 32px;
-        padding: 0;
-        display: grid;
-        place-items: center;
-        background: var(--surface3);
-        color: var(--text3);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        cursor: pointer;
-        font-size: 14px;
-        transition: color .15s, border-color .15s, background .15s;
-      }
-
-      .btn-icon:hover { color: var(--text); border-color: var(--border2); background: var(--surface2); }
-      .btn-icon:disabled { opacity: .3; cursor: not-allowed; }
-
-      /* ── Status pill ───────────────────────────────────────── */
-      .status {
-        margin-top: 10px;
-        padding: 10px 12px;
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        font-size: 12px;
-        color: var(--text3);
-        min-height: 38px;
-        line-height: 1.5;
-        transition: border-color .2s, color .2s;
-      }
-
-      .status.ok    { color: var(--green); border-color: rgba(34,197,94,.25); background: var(--green-dim); }
-      .status.error { color: #f87171;      border-color: rgba(248,113,113,.25); }
-      .status.busy  { color: var(--text2); }
-
-      /* ── Channels list ─────────────────────────────────────── */
-      .ch-list { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
-
-      .ch-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 9px 12px;
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        transition: border-color .15s;
-      }
-
-      .ch-item:hover { border-color: var(--border2); }
-
-      .ch-avatar {
-        width: 30px; height: 30px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--red), #ff7a00);
-        display: grid; place-items: center;
-        font-size: 13px;
-        font-weight: 800;
-        color: #fff;
-        flex-shrink: 0;
-      }
-
-      .ch-name {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text);
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .ch-actions { display: flex; gap: 5px; flex-shrink: 0; }
-
-      /* ── Deals area ────────────────────────────────────────── */
-      .deals-bar {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
-      }
-
-      .deals-bar h2 {
-        font-size: 18px;
-        font-weight: 800;
-        letter-spacing: -0.4px;
-      }
-
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 24px;
-        height: 22px;
-        padding: 0 8px;
-        background: var(--red);
-        color: #fff;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 800;
-        box-shadow: 0 0 10px var(--red-glow);
-      }
-
-      .deals-grid { display: flex; flex-direction: column; gap: 10px; }
-
-      /* ── Deal card ─────────────────────────────────────────── */
-      .deal-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 16px 18px;
-        transition: border-color .15s, box-shadow .2s;
-        position: relative;
-      }
-
-      .deal-card:hover {
-        border-color: var(--border2);
-        box-shadow: 0 4px 24px rgba(0,0,0,.35);
-      }
-
-      .deal-head {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 10px;
-      }
-
-      .deal-tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 3px 9px;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.2px;
-        text-transform: uppercase;
-        background: var(--red-dim);
-        color: var(--red);
-        border: 1px solid rgba(255,59,59,.2);
-      }
-
-      .deal-tag.free    { background: var(--green-dim); color: var(--green); border-color: rgba(34,197,94,.2); }
-      .deal-tag.limited { background: var(--amber-dim); color: var(--amber); border-color: rgba(245,158,11,.2); }
-
-      .deal-delete-btn {
-        margin-left: auto;
-        opacity: 0;
-        transition: opacity .15s;
-      }
-
-      .deal-card:hover .deal-delete-btn { opacity: 1; }
-
-      .deal-code-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        padding: 10px 14px;
-        margin-bottom: 10px;
-        cursor: pointer;
-        transition: border-color .15s, background .15s;
-      }
-
-      .deal-code-row:hover {
-        border-color: var(--red);
-        background: var(--red-dim);
-      }
-
-      .deal-code-text {
-        font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
-        font-size: 16px;
-        font-weight: 700;
-        letter-spacing: 2px;
-        color: var(--text);
-        flex: 1;
-      }
-
-      .deal-copy-hint {
-        font-size: 11px;
-        color: var(--text3);
-        font-weight: 500;
-      }
-
-      .deal-context {
-        font-size: 12px;
-        color: var(--text3);
-        line-height: 1.55;
-        margin-bottom: 12px;
-        font-style: italic;
-        border-left: 2px solid var(--border2);
-        padding-left: 10px;
-      }
-
-      .deal-footer {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-
-      .deal-channel-label {
-        font-size: 12px;
-        color: var(--text3);
-        font-weight: 500;
-      }
-
-      .deal-video-link {
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--text2);
-        text-decoration: none;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        max-width: 260px;
-        transition: color .15s;
-      }
-
-      .deal-video-link:hover { color: var(--red); }
-
-      .deal-ts-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        padding: 3px 8px;
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        color: var(--text3);
-        cursor: pointer;
-        transition: color .15s, border-color .15s;
-        margin-left: auto;
-        white-space: nowrap;
-        text-decoration: none;
-      }
-
-      .deal-ts-btn:hover { color: var(--text); border-color: var(--border2); }
-
-      /* ── Empty state ───────────────────────────────────────── */
-      .empty {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 80px 40px;
-        color: var(--text3);
-        gap: 12px;
-      }
-
-      .empty-icon {
-        font-size: 44px;
-        opacity: .5;
-      }
-
-      .empty h3 { font-size: 16px; font-weight: 700; color: var(--text2); }
-      .empty p  { font-size: 13px; line-height: 1.6; max-width: 300px; }
-
-      /* ── Toast ─────────────────────────────────────────────── */
-      .toast {
-        position: fixed;
-        bottom: 28px;
-        left: 50%;
-        transform: translateX(-50%) translateY(8px);
-        background: var(--surface2);
-        border: 1px solid var(--border2);
-        border-radius: var(--radius);
-        padding: 11px 20px;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text);
-        box-shadow: 0 12px 40px rgba(0,0,0,.6);
-        z-index: 9999;
-        opacity: 0;
-        transition: opacity .2s, transform .2s;
-        pointer-events: none;
-        white-space: nowrap;
-      }
-
-      .toast.show {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-      }
-
-      /* ── Spinner ───────────────────────────────────────────── */
-      .spin {
-        display: inline-block;
-        width: 12px; height: 12px;
-        border: 2px solid var(--border2);
-        border-top-color: var(--red);
-        border-radius: 50%;
-        animation: spin .6s linear infinite;
-        vertical-align: middle;
-        margin-right: 5px;
-      }
-
-      @keyframes spin { to { transform: rotate(360deg); } }
-
-      /* ── Scan all progress ─────────────────────────────────── */
-      .progress-bar {
-        height: 2px;
-        background: var(--border);
-        border-radius: 999px;
-        overflow: hidden;
-        margin-top: 8px;
-        display: none;
-      }
-
-      .progress-bar.active { display: block; }
-
-      .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, var(--red), #ff7a00);
-        border-radius: 999px;
-        width: 0%;
-        transition: width .4s ease;
-        animation: pulse-progress 1.5s ease-in-out infinite;
-      }
-
-      @keyframes pulse-progress {
-        0%, 100% { opacity: 1; }
-        50% { opacity: .6; }
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Topbar -->
-    <header class="topbar">
-      <a class="topbar-logo" href="/">
-        <div class="logo-mark">🎯</div>
-        <span class="logo-name">DealDrop</span>
-      </a>
-      <div class="topbar-divider"></div>
-      <span class="topbar-tagline">Find promo codes buried in YouTube videos</span>
-      <div class="topbar-right">
-        <button class="btn btn-ghost" id="scanAllBtn" style="height:34px;font-size:12px;">
-          ↺ Scan all channels
-        </button>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>YTScan — Find Promo Codes in YouTube Videos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #000;
+      --bg2:        #0a0a0a;
+      --surface:    rgba(255,255,255,0.045);
+      --surface2:   rgba(255,255,255,0.075);
+      --border:     rgba(255,255,255,0.09);
+      --border2:    rgba(255,255,255,0.15);
+      --red:        #ff3b30;
+      --red-dim:    rgba(255,59,48,0.18);
+      --red-glow:   rgba(255,59,48,0.30);
+      --text:       #f5f5f7;
+      --text2:      #d1d1d6;
+      --muted:      #8e8e93;
+      --muted2:     #636366;
+      --success:    #32d74b;
+      --warn:       #ffd60a;
+      --mono:       "SF Mono","Fira Code","Fira Mono",ui-monospace,monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── AMBIENT GLOWS ─────────────────────────────────────────────────── */
+    .glow-top {
+      position: fixed; top: -300px; left: 50%; transform: translateX(-50%);
+      width: 900px; height: 700px; pointer-events: none; z-index: 0;
+      background: radial-gradient(ellipse at 50% 30%, rgba(255,59,48,0.09) 0%, transparent 65%);
+    }
+
+    /* ── NAV ───────────────────────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      height: 52px;
+      display: flex; align-items: center; padding: 0 28px;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: saturate(180%) blur(24px);
+      -webkit-backdrop-filter: saturate(180%) blur(24px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none; user-select: none;
+    }
+    .nav-icon {
+      width: 26px; height: 26px; border-radius: 6px;
+      background: var(--red);
+      display: grid; place-items: center;
+      font-size: 10px; font-weight: 900; color: #fff; letter-spacing: -0.5px;
+      box-shadow: 0 0 18px rgba(255,59,48,0.45);
+    }
+    .nav-wordmark {
+      font-size: 15px; font-weight: 700; letter-spacing: -0.5px;
+      color: var(--text);
+    }
+    .nav-wordmark b { color: var(--red); font-weight: 700; }
+    .nav-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+    /* ── HERO ──────────────────────────────────────────────────────────── */
+    .hero {
+      position: relative; z-index: 1;
+      padding: 112px 24px 56px;
+      text-align: center;
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(255,59,48,0.10);
+      border: 1px solid rgba(255,59,48,0.22);
+      border-radius: 999px;
+      padding: 5px 14px 5px 10px;
+      font-size: 12px; font-weight: 600; color: var(--red);
+      letter-spacing: 0.2px;
+      margin-bottom: 24px;
+    }
+    .eyebrow-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--red);
+      animation: blink 2.2s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+    .hero-h1 {
+      font-size: clamp(44px, 8vw, 88px);
+      font-weight: 800;
+      letter-spacing: -3px;
+      line-height: 1.02;
+      color: #f5f5f7;
+      margin-bottom: 22px;
+    }
+    .hero-h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, #ff3b30 0%, #ff6b35 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-body {
+      font-size: clamp(16px, 2.4vw, 20px);
+      font-weight: 400;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 520px;
+      margin: 0 auto 36px;
+    }
+
+    /* ── HERO SEARCH ───────────────────────────────────────────────────── */
+    .hero-search {
+      max-width: 600px;
+      margin: 0 auto 14px;
+      position: relative;
+    }
+    .hero-search-input {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 20px;
+      padding: 18px 155px 18px 22px;
+      font-family: inherit; font-size: 15px; font-weight: 500;
+      color: var(--text); outline: none;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+    .hero-search-input::placeholder { color: var(--muted); font-weight: 400; }
+    .hero-search-input:focus {
+      border-color: rgba(255,59,48,0.55);
+      box-shadow: 0 0 0 4px rgba(255,59,48,0.10);
+      background: rgba(255,255,255,0.08);
+    }
+    .hero-search-btn {
+      position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+      background: var(--red); color: #fff;
+      border: none; border-radius: 14px;
+      padding: 11px 24px;
+      font-family: inherit; font-size: 14px; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+      transition: filter .15s, box-shadow .15s;
+      box-shadow: 0 4px 20px rgba(255,59,48,0.35);
+    }
+    .hero-search-btn:hover:not(:disabled) {
+      filter: brightness(1.1);
+      box-shadow: 0 6px 28px rgba(255,59,48,0.45);
+    }
+    .hero-search-btn:active { transform: translateY(-50%) scale(0.97); }
+    .hero-search-btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+
+    .hero-status {
+      min-height: 24px; font-size: 13px;
+      color: var(--muted); text-align: center;
+      transition: color .2s;
+    }
+    .hero-status.ok  { color: var(--success); }
+    .hero-status.err { color: #ff453a; }
+    .hero-status.busy { color: var(--warn); }
+
+    /* ── FEATURE ROW ───────────────────────────────────────────────────── */
+    .feature-row {
+      position: relative; z-index: 1;
+      display: flex; justify-content: center;
+      gap: 0;
+      max-width: 760px;
+      margin: 56px auto 0;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .feature-item {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 10px;
+      padding: 28px 16px;
+      border-right: 1px solid var(--border);
+      text-align: center;
+    }
+    .feature-item:last-child { border-right: none; }
+    .feature-emoji { font-size: 26px; }
+    .feature-label { font-size: 12px; font-weight: 600; color: var(--muted); line-height: 1.4; }
+    @media(max-width: 600px) {
+      .feature-row { flex-wrap: wrap; border-radius: 16px; }
+      .feature-item { flex: 0 0 50%; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+      .feature-item:nth-child(even) { border-right: none; }
+      .feature-item:nth-last-child(-n+2) { border-bottom: none; }
+    }
+
+    /* ── SECTION WRAP ──────────────────────────────────────────────────── */
+    .section {
+      position: relative; z-index: 1;
+      max-width: 760px;
+      margin: 72px auto 0;
+      padding: 0 24px;
+    }
+    .section-label {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--muted2);
+      margin-bottom: 16px;
+    }
+
+    /* ── TOOL CARDS ────────────────────────────────────────────────────── */
+    .tool-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media(max-width: 640px) { .tool-grid { grid-template-columns: 1fr; } }
+
+    .tool-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      transition: border-color .2s;
+    }
+    .tool-card:hover { border-color: var(--border2); }
+
+    .tool-card-header {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .tool-card-icon {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: var(--red-dim);
+      display: grid; place-items: center;
+      font-size: 15px;
+    }
+    .tool-card-title { font-size: 13px; font-weight: 700; letter-spacing: -0.2px; }
+    .tool-card-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+    .tool-card-body { padding: 18px 20px 20px; }
+
+    /* ── INPUTS ────────────────────────────────────────────────────────── */
+    .inp {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      color: var(--text); outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .inp::placeholder { color: var(--muted); font-weight: 400; }
+    .inp:focus {
+      border-color: rgba(255,59,48,0.45);
+      box-shadow: 0 0 0 3px rgba(255,59,48,0.10);
+    }
+
+    /* ── BUTTONS ───────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      border: none; border-radius: 12px;
+      padding: 11px 18px;
+      font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+      transition: filter .15s, transform .1s, opacity .15s, box-shadow .15s;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn:disabled { opacity: .38; cursor: not-allowed; filter: none !important; }
+    .btn-red {
+      background: var(--red); color: #fff; width: 100%; margin-top: 12px;
+      box-shadow: 0 4px 18px rgba(255,59,48,0.28);
+    }
+    .btn-red:hover:not(:disabled) { filter: brightness(1.08); box-shadow: 0 6px 24px rgba(255,59,48,0.38); }
+    .btn-ghost {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border2); padding: 7px 12px;
+      font-size: 12px; border-radius: 9px;
+    }
+    .btn-ghost:hover:not(:disabled) { border-color: var(--muted); }
+    .btn-nav {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border2);
+      padding: 7px 14px; font-size: 12px; border-radius: 9px;
+    }
+    .btn-nav:hover:not(:disabled) { border-color: var(--muted); }
+    .btn-danger { color: #ff453a !important; }
+
+    /* ── STATUS CHIP ───────────────────────────────────────────────────── */
+    .chip {
+      display: flex; align-items: center; gap: 8px;
+      border-radius: 10px;
+      padding: 10px 13px;
+      font-size: 12px; font-weight: 500;
+      min-height: 38px; line-height: 1.45;
+      margin-top: 10px;
+    }
+    .chip.idle { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+    .chip.busy { background: rgba(255,214,10,.07); color: var(--warn); border: 1px solid rgba(255,214,10,.2); }
+    .chip.ok   { background: rgba(50,215,75,.07); color: var(--success); border: 1px solid rgba(50,215,75,.2); }
+    .chip.err  { background: rgba(255,69,58,.07); color: #ff453a; border: 1px solid rgba(255,69,58,.2); }
+
+    /* ── CHANNEL LIST ──────────────────────────────────────────────────── */
+    .ch-list { display: flex; flex-direction: column; gap: 7px; margin-top: 14px; }
+    .ch-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: border-color .15s;
+    }
+    .ch-row:hover { border-color: var(--border2); }
+    .ch-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, #ff3b30, #ff6b35);
+      display: grid; place-items: center;
+      font-size: 12px; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .ch-name {
+      flex: 1; font-size: 13px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .ch-btns { display: flex; gap: 6px; flex-shrink: 0; }
+
+    /* ── DEALS SECTION ─────────────────────────────────────────────────── */
+    .deals-section {
+      position: relative; z-index: 1;
+      max-width: 760px; margin: 56px auto 0;
+      padding: 0 24px 120px;
+    }
+    .deals-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .deals-heading { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+    .deals-badge {
+      background: rgba(255,59,48,.12); color: var(--red);
+      border: 1px solid rgba(255,59,48,.22);
+      border-radius: 999px; padding: 3px 12px;
+      font-size: 12px; font-weight: 700;
+    }
+    .deals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    /* ── DEAL CARD ─────────────────────────────────────────────────────── */
+    .deal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      display: flex; flex-direction: column; gap: 12px;
+      transition: border-color .2s, transform .25s, box-shadow .25s;
+    }
+    .deal-card:hover {
+      border-color: rgba(255,255,255,0.2);
+      transform: translateY(-3px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+    }
+    .deal-top-row { display: flex; align-items: center; justify-content: space-between; }
+    .deal-badge {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+      background: var(--red-dim); color: var(--red);
+      border: 1px solid rgba(255,59,48,.2); border-radius: 6px;
+      padding: 3px 8px;
+    }
+    .deal-del {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted2); font-size: 15px;
+      padding: 3px 7px; border-radius: 7px;
+      line-height: 1;
+      transition: color .15s, background .15s;
+    }
+    .deal-del:hover { color: #ff453a; background: rgba(255,69,58,.10); }
+
+    .code-box {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      padding: 12px 16px;
+      cursor: pointer; gap: 10px;
+      transition: border-color .15s, background .15s;
+    }
+    .code-box:hover { border-color: var(--red); background: rgba(255,59,48,.05); }
+    .code-text {
+      font-family: var(--mono);
+      font-size: 17px; font-weight: 700; letter-spacing: 1.8px;
+      color: var(--text);
+    }
+    .code-copy {
+      font-size: 16px; color: var(--muted);
+      transition: color .15s;
+      flex-shrink: 0;
+    }
+    .code-box:hover .code-copy { color: var(--red); }
+
+    .deal-context {
+      font-size: 12px; color: var(--muted); line-height: 1.55;
+      font-style: italic;
+    }
+    .deal-footer {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .deal-ch { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .deal-link {
+      font-size: 12px; font-weight: 600; color: var(--red);
+      text-decoration: none;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 150px;
+    }
+    .deal-link:hover { text-decoration: underline; }
+    .deal-ts {
+      margin-left: auto; flex-shrink: 0;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 3px 10px;
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+    }
+    .deal-ts:hover { color: var(--text2); border-color: var(--muted); }
+
+    /* ── EMPTY STATE ───────────────────────────────────────────────────── */
+    .empty {
+      grid-column: 1/-1;
+      padding: 72px 24px; text-align: center;
+    }
+    .empty-icon { font-size: 56px; margin-bottom: 20px; }
+    .empty-title { font-size: 20px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 10px; }
+    .empty-body {
+      font-size: 14px; color: var(--muted); line-height: 1.65;
+      max-width: 340px; margin: 0 auto;
+    }
+
+    /* ── SEPARATOR ─────────────────────────────────────────────────────── */
+    .sep {
+      max-width: 760px; margin: 64px auto 0;
+      padding: 0 24px;
+    }
+    .sep hr { border: none; border-top: 1px solid var(--border); }
+
+    /* ── TOAST ─────────────────────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(24,24,26,0.92);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 14px;
+      padding: 12px 24px;
+      font-size: 13px; font-weight: 600;
+      box-shadow: 0 10px 48px rgba(0,0,0,0.7);
+      z-index: 9999; pointer-events: none;
+      opacity: 0;
+      transition: transform .32s cubic-bezier(.34,1.56,.64,1), opacity .24s;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* ── SPINNER ───────────────────────────────────────────────────────── */
+    .sp {
+      display: inline-block; width: 11px; height: 11px;
+      border: 2px solid rgba(255,255,255,0.18); border-top-color: currentColor;
+      border-radius: 50%; animation: spin .55s linear infinite;
+      vertical-align: middle; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- Ambient glow -->
+<div class="glow-top"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-brand" href="/">
+    <div class="nav-icon">YT</div>
+    <span class="nav-wordmark">YT<b>Scan</b></span>
+  </a>
+  <div class="nav-right">
+    <button class="btn btn-nav" id="scanAllBtn">↻ Scan All</button>
+    <button class="btn btn-nav btn-danger" id="clearAllBtn">Clear</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="eyebrow">
+    <span class="eyebrow-dot"></span>
+    No account needed · Works on any YouTube video
+  </div>
+  <h1 class="hero-h1">Stop watching.<br/>Just get the <em>deal.</em></h1>
+  <p class="hero-body">Paste a YouTube link. YTScan reads the full transcript and surfaces every promo code, discount, and sponsored offer — with a direct timestamp so you can skip right to it.</p>
+
+  <div class="hero-search">
+    <input
+      class="hero-search-input"
+      id="heroUrl"
+      type="url"
+      placeholder="Paste a YouTube URL…"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <button class="hero-search-btn" id="heroScanBtn">Scan</button>
+  </div>
+  <p class="hero-status" id="heroStatus">Try it — paste any YouTube video above.</p>
+</section>
+
+<!-- FEATURE ROW -->
+<div class="section" style="margin-top:48px">
+  <div class="feature-row">
+    <div class="feature-item">
+      <span class="feature-emoji">🔍</span>
+      <span class="feature-label">Full transcript<br/>scan</span>
+    </div>
+    <div class="feature-item">
+      <span class="feature-emoji">🏷️</span>
+      <span class="feature-label">Promo codes<br/>extracted</span>
+    </div>
+    <div class="feature-item">
+      <span class="feature-emoji">⏱</span>
+      <span class="feature-label">Timestamp<br/>deep link</span>
+    </div>
+    <div class="feature-item">
+      <span class="feature-emoji">📺</span>
+      <span class="feature-label">Auto-scan<br/>channels</span>
+    </div>
+    <div class="feature-item">
+      <span class="feature-emoji">📋</span>
+      <span class="feature-label">One-click<br/>copy</span>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLS -->
+<div class="section" style="margin-top:48px">
+  <p class="section-label">Tools</p>
+  <div class="tool-grid">
+
+    <!-- Scan a video -->
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <div class="tool-card-icon">🎬</div>
+        <div>
+          <div class="tool-card-title">Scan a video</div>
+          <div class="tool-card-sub">Paste any YouTube link</div>
+        </div>
       </div>
-    </header>
-
-    <div class="layout">
-      <!-- Sidebar -->
-      <aside class="sidebar">
-
-        <!-- Scan a video -->
-        <div>
-          <div class="section-head">
-            <span class="section-title">Scan a video</span>
-          </div>
-          <div class="card">
-            <div class="card-body">
-              <div class="input-group">
-                <input class="input" id="videoUrl" type="url" placeholder="youtube.com/watch?v=…" />
-                <button class="btn btn-primary" id="scanBtn" style="padding:0 18px;">Scan</button>
-              </div>
-              <div class="status" id="scanStatus">Paste any YouTube link and hit Scan.</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Watched channels -->
-        <div>
-          <div class="section-head">
-            <span class="section-title">Watched channels</span>
-          </div>
-          <div class="card">
-            <div class="card-body">
-              <div class="input-group">
-                <input class="input" id="channelUrl" type="url" placeholder="youtube.com/@channel" />
-                <button class="btn btn-primary" id="addChannelBtn" style="padding:0 14px;">Add</button>
-              </div>
-              <div class="status" id="channelStatus">Add a channel to monitor for new promo codes.</div>
-              <div class="progress-bar" id="scanAllProgress"><div class="progress-fill" id="scanAllFill"></div></div>
-              <div id="channelList" class="ch-list"></div>
-            </div>
-          </div>
-        </div>
-
-      </aside>
-
-      <!-- Main area -->
-      <main class="main">
-        <div class="deals-bar">
-          <h2>Deals found</h2>
-          <span class="badge" id="dealCount">0</span>
-          <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-            <button class="btn btn-ghost" id="clearAllBtn" style="height:32px;font-size:12px;display:none;">Clear all</button>
-          </div>
-        </div>
-        <div id="dealsList"></div>
-      </main>
+      <div class="tool-card-body">
+        <input class="inp" id="videoUrl" type="url" placeholder="https://youtube.com/watch?v=…"/>
+        <button class="btn btn-red" id="scanBtn">Scan for deals</button>
+        <div class="chip idle" id="scanStatus">Ready to scan.</div>
+      </div>
     </div>
 
-    <!-- Toast -->
-    <div class="toast" id="toast"></div>
+    <!-- Watch a channel -->
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <div class="tool-card-icon">📡</div>
+        <div>
+          <div class="tool-card-title">Watch a channel</div>
+          <div class="tool-card-sub">Auto-scan latest videos</div>
+        </div>
+      </div>
+      <div class="tool-card-body">
+        <input class="inp" id="channelUrl" type="url" placeholder="https://youtube.com/@channel"/>
+        <button class="btn btn-red" id="addChannelBtn">Add channel</button>
+        <div class="chip idle" id="channelStatus">Add channels to monitor.</div>
+        <div class="ch-list" id="channelList"></div>
+      </div>
+    </div>
 
-    <script>
-      const API = "";
+  </div>
+</div>
 
-      // ── Toast ─────────────────────────────────────────────────────────────
-      let _toastTimer;
-      function toast(msg, duration = 2600) {
-        const el = document.getElementById("toast");
-        el.textContent = msg;
-        el.classList.add("show");
-        clearTimeout(_toastTimer);
-        _toastTimer = setTimeout(() => el.classList.remove("show"), duration);
-      }
+<!-- DEALS -->
+<div class="sep" style="margin-top:56px"><hr/></div>
 
-      // ── Status ────────────────────────────────────────────────────────────
-      function setStatus(id, html, type = "") {
-        const el = document.getElementById(id);
-        el.className = "status" + (type ? " " + type : "");
-        el.innerHTML = html;
-      }
+<div class="deals-section">
+  <div class="deals-top">
+    <span class="deals-heading">Deals found</span>
+    <span class="deals-badge" id="dealCount">0</span>
+  </div>
+  <div class="deals-grid" id="dealsList"></div>
+</div>
 
-      // ── Tag colour helper ─────────────────────────────────────────────────
-      function tagClass(label) {
-        const l = label.toLowerCase();
-        if (l.includes("free") || l.includes("trial")) return "free";
-        if (l.includes("limited") || l.includes("giveaway")) return "limited";
-        return "";
-      }
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
 
-      // ── Deals ─────────────────────────────────────────────────────────────
-      async function loadDeals() {
-        const deals = await fetch(`${API}/api/deals`).then(r => r.json()).catch(() => []);
-        renderDeals(deals);
-      }
+<script>
+const API = "";
 
-      function renderDeals(deals) {
-        document.getElementById("dealCount").textContent = deals.length;
-        const clearBtn = document.getElementById("clearAllBtn");
-        clearBtn.style.display = deals.length > 0 ? "" : "none";
+// ── Toast ───────────────────────────────────────────────────────────────────
+let _tt;
+function toast(msg, ms = 3000) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(_tt);
+  _tt = setTimeout(() => el.classList.remove("show"), ms);
+}
 
-        const el = document.getElementById("dealsList");
+// ── Status chip ──────────────────────────────────────────────────────────────
+function setChip(id, html, state = "idle") {
+  const el = document.getElementById(id);
+  el.className = `chip ${state}`;
+  el.innerHTML = html;
+}
+function setHeroStatus(msg, state = "") {
+  const el = document.getElementById("heroStatus");
+  el.className = `hero-status${state ? " " + state : ""}`;
+  el.innerHTML = msg;
+}
 
-        if (!deals.length) {
-          el.innerHTML = `
-            <div class="empty">
-              <div class="empty-icon">🔍</div>
-              <h3>No deals yet</h3>
-              <p>Paste a YouTube URL and hit <strong>Scan</strong>, or add a channel to monitor automatically.</p>
-            </div>`;
-          return;
-        }
+const sp = () => `<span class="sp"></span>`;
 
-        el.innerHTML = `<div class="deals-grid">${deals.map(dealCard).join("")}</div>`;
+// ── Deals ────────────────────────────────────────────────────────────────────
+async function loadDeals() {
+  const deals = await fetch(`${API}/api/deals`).then(r => r.json()).catch(() => []);
+  renderDeals(deals);
+}
 
-        el.querySelectorAll(".deal-code-row").forEach(row => {
-          row.addEventListener("click", () => {
-            navigator.clipboard.writeText(row.dataset.code).then(() =>
-              toast(`✅ Copied "${row.dataset.code}"`)
-            ).catch(() => toast("Couldn't access clipboard"));
-          });
-        });
+function renderDeals(deals) {
+  document.getElementById("dealCount").textContent = deals.length;
+  const el = document.getElementById("dealsList");
 
-        el.querySelectorAll(".deal-delete-btn").forEach(btn => {
-          btn.addEventListener("click", async () => {
-            btn.textContent = "…";
-            await fetch(`${API}/api/deals/${btn.dataset.id}`, { method: "DELETE" });
-            loadDeals();
-          });
-        });
-      }
+  if (!deals.length) {
+    el.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🎯</div>
+        <div class="empty-title">No deals yet</div>
+        <p class="empty-body">Paste a YouTube link in the search above. YTScan will read the transcript and pull out every promo code, discount, and sponsored offer automatically.</p>
+      </div>`;
+    return;
+  }
 
-      function dealCard(d) {
-        const tc = tagClass(d.label);
-        const codeHtml = d.code
-          ? `<div class="deal-code-row" data-code="${d.code}" title="Click to copy">
-               <span class="deal-code-text">${d.code}</span>
-               <span class="deal-copy-hint">click to copy</span>
-             </div>`
-          : "";
+  el.innerHTML = deals.map(dealCard).join("");
 
-        const title = d.videoTitle.length > 52 ? d.videoTitle.slice(0, 52) + "…" : d.videoTitle;
-        const ctx   = d.context.length > 180  ? d.context.slice(0, 180) + "…"  : d.context;
-        const ytUrl = `${d.videoUrl}&t=${d.timestampSeconds}s`;
-
-        return `<div class="deal-card">
-          <div class="deal-head">
-            <span class="deal-tag ${tc}">${d.label}</span>
-            <button class="btn-icon deal-delete-btn" data-id="${d.id}" title="Remove deal">✕</button>
-          </div>
-          ${codeHtml}
-          <p class="deal-context">"${ctx}"</p>
-          <div class="deal-footer">
-            <span class="deal-channel-label">📺 ${d.channelName}</span>
-            <a class="deal-video-link" href="${d.videoUrl}" target="_blank" rel="noreferrer" title="${d.videoTitle}">${title}</a>
-            <a class="deal-ts-btn" href="${ytUrl}" target="_blank" rel="noreferrer" title="Jump to this moment">⏱ ${d.timestampLabel}</a>
-          </div>
-        </div>`;
-      }
-
-      // ── Scan a video ──────────────────────────────────────────────────────
-      async function doScan() {
-        const url = document.getElementById("videoUrl").value.trim();
-        if (!url) { document.getElementById("videoUrl").focus(); return; }
-
-        const btn = document.getElementById("scanBtn");
-        btn.disabled = true;
-        setStatus("scanStatus", `<span class="spin"></span>Fetching transcript…`, "busy");
-
-        const res = await fetch(`${API}/api/scan`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url }),
-        }).then(r => r.json()).catch(e => ({ error: e.message }));
-
-        if (res.error) {
-          setStatus("scanStatus", `❌ ${res.error}`, "error");
-        } else if (res.skipped) {
-          setStatus("scanStatus", "⚡ Already scanned — results shown below.", "ok");
-        } else {
-          const n = res.dealsFound;
-          setStatus("scanStatus", `✅ Found ${n} deal${n !== 1 ? "s" : ""}${n === 0 ? " — no promo codes in this video." : "."}`, "ok");
-          loadDeals();
-        }
-        btn.disabled = false;
-      }
-
-      document.getElementById("scanBtn").addEventListener("click", doScan);
-      document.getElementById("videoUrl").addEventListener("keydown", e => { if (e.key === "Enter") doScan(); });
-
-      // ── Add / manage channels ─────────────────────────────────────────────
-      async function loadChannels() {
-        const channels = await fetch(`${API}/api/channels`).then(r => r.json()).catch(() => []);
-        renderChannels(channels);
-      }
-
-      function renderChannels(channels) {
-        const el = document.getElementById("channelList");
-        if (!channels.length) { el.innerHTML = ""; return; }
-
-        el.innerHTML = channels.map(ch => `
-          <div class="ch-item">
-            <div class="ch-avatar">${ch.name.charAt(0).toUpperCase()}</div>
-            <span class="ch-name" title="${ch.name}">${ch.name}</span>
-            <div class="ch-actions">
-              <button class="btn-icon ch-scan" data-id="${ch.id}" title="Scan latest videos">↻</button>
-              <button class="btn-icon ch-delete" data-id="${ch.id}" title="Remove channel">✕</button>
-            </div>
-          </div>`).join("");
-
-        el.querySelectorAll(".ch-scan").forEach(btn => {
-          btn.addEventListener("click", async () => {
-            btn.disabled = true;
-            btn.textContent = "…";
-            setStatus("channelStatus", `<span class="spin"></span>Scanning latest videos…`, "busy");
-            const r = await fetch(`${API}/api/channels/${btn.dataset.id}/scan`, { method: "POST" })
-              .then(r => r.json()).catch(e => ({ error: e.message }));
-            if (r.error) {
-              setStatus("channelStatus", `❌ ${r.error}`, "error");
-            } else {
-              const found = r.results.reduce((a, v) => a + (v.deals?.length ?? 0), 0);
-              setStatus("channelStatus", `✅ Scanned ${r.results.length} videos — ${found} new deal${found !== 1 ? "s" : ""} found.`, "ok");
-              loadDeals();
-            }
-            btn.disabled = false;
-            btn.textContent = "↻";
-          });
-        });
-
-        el.querySelectorAll(".ch-delete").forEach(btn => {
-          btn.addEventListener("click", async () => {
-            await fetch(`${API}/api/channels/${btn.dataset.id}`, { method: "DELETE" });
-            loadChannels();
-            toast("Channel removed.");
-          });
-        });
-      }
-
-      async function doAddChannel() {
-        const url = document.getElementById("channelUrl").value.trim();
-        if (!url) { document.getElementById("channelUrl").focus(); return; }
-
-        const btn = document.getElementById("addChannelBtn");
-        btn.disabled = true;
-        setStatus("channelStatus", `<span class="spin"></span>Resolving channel…`, "busy");
-
-        const res = await fetch(`${API}/api/channels`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url }),
-        }).then(r => r.json()).catch(e => ({ error: e.message }));
-
-        if (res.error) {
-          setStatus("channelStatus", `❌ ${res.error}`, "error");
-        } else {
-          setStatus("channelStatus", `✅ Added <strong>${res.channel.name}</strong> — scanning in background…`, "ok");
-          document.getElementById("channelUrl").value = "";
-          loadChannels();
-          setTimeout(loadDeals, 9000);
-        }
-        btn.disabled = false;
-      }
-
-      document.getElementById("addChannelBtn").addEventListener("click", doAddChannel);
-      document.getElementById("channelUrl").addEventListener("keydown", e => { if (e.key === "Enter") doAddChannel(); });
-
-      // ── Scan all ──────────────────────────────────────────────────────────
-      document.getElementById("scanAllBtn").addEventListener("click", async () => {
-        const btn = document.getElementById("scanAllBtn");
-        const bar = document.getElementById("scanAllProgress");
-        btn.disabled = true;
-        bar.classList.add("active");
-        const r = await fetch(`${API}/api/scan-all`, { method: "POST" })
-          .then(r => r.json()).catch(() => ({}));
-        toast(`↺ Scanning ${r.channelsQueued ?? 0} channel${r.channelsQueued !== 1 ? "s" : ""} in background…`);
-        setTimeout(() => { btn.disabled = false; bar.classList.remove("active"); loadDeals(); }, 12000);
-      });
-
-      // ── Clear all ─────────────────────────────────────────────────────────
-      document.getElementById("clearAllBtn").addEventListener("click", async () => {
-        const deals = await fetch(`${API}/api/deals`).then(r => r.json()).catch(() => []);
-        await Promise.all(deals.map(d => fetch(`${API}/api/deals/${d.id}`, { method: "DELETE" })));
-        loadDeals();
-        toast("All deals cleared.");
-      });
-
-      // ── Init ──────────────────────────────────────────────────────────────
+  el.querySelectorAll(".code-box").forEach(box => {
+    box.addEventListener("click", () => {
+      navigator.clipboard.writeText(box.dataset.code).catch(() => {});
+      toast(`✅  Copied "${box.dataset.code}"`);
+    });
+  });
+  el.querySelectorAll(".deal-ts").forEach(btn => {
+    btn.addEventListener("click", () =>
+      window.open(`${btn.dataset.url}&t=${btn.dataset.sec}s`, "_blank")
+    );
+  });
+  el.querySelectorAll(".deal-del").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      await fetch(`${API}/api/deals/${btn.dataset.id}`, { method: "DELETE" });
       loadDeals();
+    });
+  });
+}
+
+function dealCard(d) {
+  const code = d.code ? `
+    <div class="code-box" data-code="${d.code}" title="Click to copy">
+      <span class="code-text">${d.code}</span>
+      <span class="code-copy">⧉</span>
+    </div>` : "";
+  const ctx = d.context ? `<p class="deal-context">"${d.context.slice(0,180)}${d.context.length > 180 ? "…" : ""}"</p>` : "";
+  const title = (d.videoTitle || "").slice(0, 44) + ((d.videoTitle || "").length > 44 ? "…" : "");
+
+  return `
+    <div class="deal-card">
+      <div class="deal-top-row">
+        <span class="deal-badge">${d.label}</span>
+        <button class="deal-del" data-id="${d.id}" title="Remove">✕</button>
+      </div>
+      ${code}
+      ${ctx}
+      <div class="deal-footer">
+        <span class="deal-ch">📺 ${d.channelName}</span>
+        <a class="deal-link" href="${d.videoUrl}" target="_blank" rel="noreferrer" title="${d.videoTitle}">${title}</a>
+        <span class="deal-ts" data-url="${d.videoUrl}" data-sec="${d.timestampSeconds}">⏱ ${d.timestampLabel}</span>
+      </div>
+    </div>`;
+}
+
+// ── Scan ─────────────────────────────────────────────────────────────────────
+async function doScan(url, isHero) {
+  if (!url) return;
+  const btn = document.getElementById(isHero ? "heroScanBtn" : "scanBtn");
+  const setS = isHero
+    ? (m, s) => setHeroStatus(m, s)
+    : (m, s) => setChip("scanStatus", m, s);
+
+  btn.disabled = true;
+  setS(`${sp()} Fetching transcript…`, "busy");
+
+  const res = await fetch(`${API}/api/scan`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  }).then(r => r.json()).catch(e => ({ error: e.message }));
+
+  btn.disabled = false;
+
+  if (res.error) {
+    setS(`❌  ${res.error}`, "err");
+  } else if (res.skipped) {
+    setS("⚡  Already scanned — results below.", "ok");
+    loadDeals();
+  } else {
+    const n = res.dealsFound;
+    setS(`✅  Found ${n} deal${n !== 1 ? "s" : ""}.`, "ok");
+    loadDeals();
+    if (n > 0) {
+      document.querySelector(".deals-section").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+}
+
+document.getElementById("heroScanBtn").addEventListener("click", () => {
+  doScan(document.getElementById("heroUrl").value.trim(), true);
+});
+document.getElementById("heroUrl").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("heroScanBtn").click();
+});
+
+document.getElementById("scanBtn").addEventListener("click", () => {
+  doScan(document.getElementById("videoUrl").value.trim(), false);
+});
+document.getElementById("videoUrl").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("scanBtn").click();
+});
+
+// ── Channels ──────────────────────────────────────────────────────────────────
+async function loadChannels() {
+  const chs = await fetch(`${API}/api/channels`).then(r => r.json()).catch(() => []);
+  renderChannels(chs);
+}
+
+function renderChannels(chs) {
+  const el = document.getElementById("channelList");
+  if (!chs.length) { el.innerHTML = ""; return; }
+
+  el.innerHTML = chs.map(ch => `
+    <div class="ch-row">
+      <div class="ch-avatar">${ch.name.charAt(0).toUpperCase()}</div>
+      <span class="ch-name" title="${ch.name}">${ch.name}</span>
+      <div class="ch-btns">
+        <button class="btn btn-ghost ch-scan" data-id="${ch.id}" title="Scan now">↻</button>
+        <button class="btn btn-ghost btn-danger ch-del" data-id="${ch.id}" title="Remove">✕</button>
+      </div>
+    </div>`).join("");
+
+  el.querySelectorAll(".ch-scan").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const orig = btn.textContent;
+      btn.disabled = true; btn.innerHTML = sp();
+      setChip("channelStatus", `${sp()} Scanning latest videos…`, "busy");
+      const r = await fetch(`${API}/api/channels/${btn.dataset.id}/scan`, { method: "POST" })
+        .then(r => r.json()).catch(e => ({ error: e.message }));
+      if (r.error) {
+        setChip("channelStatus", `❌  ${r.error}`, "err");
+      } else {
+        const n = r.results.reduce((a, v) => a + (v.deals?.length ?? 0), 0);
+        setChip("channelStatus", `✅  Scanned ${r.results.length} videos — ${n} new deal${n !== 1 ? "s" : ""}.`, "ok");
+        loadDeals();
+      }
+      btn.disabled = false; btn.textContent = orig;
+    });
+  });
+
+  el.querySelectorAll(".ch-del").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      await fetch(`${API}/api/channels/${btn.dataset.id}`, { method: "DELETE" });
       loadChannels();
-    </script>
-  </body>
+    });
+  });
+}
+
+document.getElementById("addChannelBtn").addEventListener("click", async () => {
+  const url = document.getElementById("channelUrl").value.trim();
+  if (!url) return;
+  const btn = document.getElementById("addChannelBtn");
+  btn.disabled = true;
+  setChip("channelStatus", `${sp()} Resolving channel…`, "busy");
+
+  const res = await fetch(`${API}/api/channels`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  }).then(r => r.json()).catch(e => ({ error: e.message }));
+
+  btn.disabled = false;
+  if (res.error) {
+    setChip("channelStatus", `❌  ${res.error}`, "err");
+  } else {
+    setChip("channelStatus", `✅  Added "${res.channel.name}" — scanning in background.`, "ok");
+    document.getElementById("channelUrl").value = "";
+    loadChannels();
+    setTimeout(loadDeals, 9000);
+  }
+});
+document.getElementById("channelUrl").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("addChannelBtn").click();
+});
+
+// ── Scan all ──────────────────────────────────────────────────────────────────
+document.getElementById("scanAllBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("scanAllBtn");
+  btn.disabled = true; btn.innerHTML = `${sp()} Scanning…`;
+  const r = await fetch(`${API}/api/scan-all`, { method: "POST" }).then(r => r.json()).catch(() => ({}));
+  toast(`↻ Scanning ${r.channelsQueued ?? 0} channel${(r.channelsQueued ?? 0) !== 1 ? "s" : ""} in background…`);
+  btn.disabled = false; btn.textContent = "↻ Scan All";
+  setTimeout(loadDeals, 10000);
+});
+
+// ── Clear all ─────────────────────────────────────────────────────────────────
+document.getElementById("clearAllBtn").addEventListener("click", async () => {
+  if (!confirm("Remove all saved deals?")) return;
+  const deals = await fetch(`${API}/api/deals`).then(r => r.json()).catch(() => []);
+  await Promise.all(deals.map(d => fetch(`${API}/api/deals/${d.id}`, { method: "DELETE" })));
+  loadDeals();
+  toast("🗑  All deals cleared.");
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadDeals();
+loadChannels();
+</script>
+</body>
 </html>
