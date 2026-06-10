@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>YTScan — Never miss a creator deal</title>
+<title>Perk — Never miss a creator deal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -82,13 +82,17 @@
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
   h1.hero-title{
-    font-size:clamp(30px,4.5vw,46px);
-    font-weight:900;letter-spacing:-1.8px;line-height:1.06;
-    margin-bottom:16px;
+    font-size:clamp(48px,9vw,84px);
+    font-weight:900;letter-spacing:-3px;line-height:1.02;
+    margin-bottom:10px;
   }
   h1.hero-title em{font-style:normal;color:var(--blue)}
+  .hero-tag{
+    font-size:clamp(20px,3vw,28px);font-weight:800;
+    letter-spacing:-.6px;color:var(--ink);margin-bottom:14px;
+  }
   .hero-sub{
-    font-size:clamp(16px,2.2vw,20px);color:var(--ink2);
+    font-size:clamp(15px,2vw,18px);color:var(--ink2);
     max-width:540px;margin:0 auto 36px;line-height:1.55;
   }
 
@@ -359,8 +363,8 @@
 
 <nav>
   <a class="brand" href="/">
-    <div class="brand-mark">Y</div>
-    <span class="brand-name">YT<b>Scan</b></span>
+    <div class="brand-mark">P</div>
+    <span class="brand-name">Perk</span>
   </a>
   <div class="nav-spacer"></div>
   <a class="nav-link" href="#how">How it works</a>
@@ -369,8 +373,9 @@
 
 <section class="hero">
   <div class="pill"><span class="pill-dot"></span>No more sitting through sponsor reads</div>
-  <h1 class="hero-title">Find the creator deal.<br/><em>Skip the video.</em></h1>
-  <p class="hero-sub">Search any YouTuber you love. YTScan checks their latest videos for promo codes and discounts — and texts you the moment a new one drops.</p>
+  <h1 class="hero-title"><em>Perk</em></h1>
+  <p class="hero-tag">Find the creator deal. Skip the video.</p>
+  <p class="hero-sub">Search any YouTuber you love. Perk checks their latest videos for promo codes and discounts — and texts you the moment a new one drops.</p>
 
   <div class="search-wrap">
     <div class="search-box">
@@ -453,7 +458,7 @@
 </div>
 
 <footer>
-  YTScan · reads public YouTube data · scans video descriptions for deals
+  Perk · reads public YouTube data · scans video descriptions for deals
 </footer>
 
 <div class="toast" id="toast"></div>
