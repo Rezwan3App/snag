@@ -123,7 +123,7 @@ app.post("/api/sms/subscribe", async (c) => {
   db.setSubscriber(normalized);
 
   const welcome =
-    "🎯 You're set on YTScan. We'll text you the promo codes & deals buried in new videos from the channels you follow — so you never have to sit through the sponsor read again.";
+    "🎯 You're set on Snag. We'll text you the promo codes & deals buried in new videos from the channels you follow — so you never have to sit through the sponsor read again.";
   const result = await sendSms(normalized, welcome);
   db.addNotification({
     phone: normalized,
@@ -171,7 +171,7 @@ app.post("/api/sms/test", async (c) => {
     );
   } else {
     body =
-      '🎯 Sample YTScan alert: "Use code LTT for 10% off your order" — link in description. Real alerts arrive automatically when channels you follow drop new videos.';
+      '🎯 Sample Snag alert: "Use code LTT for 10% off your order" — link in description. Real alerts arrive automatically when channels you follow drop new videos.';
   }
 
   const result = await sendSms(sub.phone, body);
@@ -190,4 +190,4 @@ app.post("/api/sms/test", async (c) => {
 // ── Boot ─────────────────────────────────────────────────────────────────────
 const PORT = Number(process.env.PORT ?? 4242);
 export default { port: PORT, fetch: app.fetch };
-console.log(`YTScan running at http://localhost:${PORT}`);
+console.log(`Snag running at http://localhost:${PORT}`);

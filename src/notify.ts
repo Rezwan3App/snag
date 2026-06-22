@@ -54,7 +54,7 @@ export function buildDealSms(deals: DealLike[]): string {
       const link = d.dealUrl || videoUrl;
       lines.push(`• ${codePart} → ${link}`);
     }
-    if (vidDeals.length > 4) lines.push(`…+${vidDeals.length - 4} more on YTScan`);
+    if (vidDeals.length > 4) lines.push(`…+${vidDeals.length - 4} more on Snag`);
     blocks.push(lines.join("\n"));
   }
 
@@ -80,7 +80,7 @@ export async function sendSms(to: string, body: string): Promise<SendResult> {
 
   // Demo mode — no provider configured. Log it so the UI can show what *would* send.
   if (!sid || !token || !from) {
-    console.log(`[YTScan SMS · DEMO] → ${to}\n${body}\n`);
+    console.log(`[Snag SMS · DEMO] → ${to}\n${body}\n`);
     return { mode: "demo", ok: true };
   }
 

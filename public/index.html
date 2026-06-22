@@ -760,16 +760,16 @@ function renderHistory(){
     const code=d.code?codeChip(d.code):"";
     const exp=expiryPill(d.expiresAt,d.expiryText);
     const link=d.dealUrl?`<a class="deal-link" href="${d.dealUrl}" target="_blank" rel="noreferrer">${d.dealUrl.replace(/^https?:\/\//,"")}</a>`:"";
-    const expiredCls=dealIsExpired(d)?" expired":"";
+    const expiredCls=dealIsExpired(d)?" is-expired":"";
     return `<div class="hist-item${expiredCls}">
-      <div class="hist-head">
+      <div class="hist-row1">
         <span class="deal-badge">${d.label}</span>
         ${code}
         ${exp}
         <button class="icon-btn danger hist-del" data-id="${d.id}" title="Remove">✕</button>
       </div>
       <div class="hist-ctx">${escapeHtml(d.context||"")}${link?" · "+link:""}</div>
-      <div class="hist-meta">📺 ${escapeHtml(d.channelName)} · <a href="${d.videoUrl}" target="_blank" rel="noreferrer">${escapeHtml((d.videoTitle||"").slice(0,60))}</a> · ${fmtDate(d.detectedAt)}</div>
+      <div class="hist-ch">📺 ${escapeHtml(d.channelName)} · <a href="${d.videoUrl}" target="_blank" rel="noreferrer">${escapeHtml((d.videoTitle||"").slice(0,60))}</a> · ${fmtDate(d.detectedAt)}</div>
     </div>`;
   }).join("");
 
