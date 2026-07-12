@@ -4,4 +4,5 @@ node_modules/
 dist/
 .bun/
 dealdrop.json
+ytscan.json
 bun.lock

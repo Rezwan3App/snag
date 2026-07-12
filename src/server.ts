@@ -13,7 +13,6 @@ import {
   maskPhone,
   buildDealSms,
   sendSms,
-  notifyMissedDeals,
   SMS_CONFIGURED,
 } from "./notify";
 
@@ -186,6 +185,18 @@ app.post("/api/sms/test", async (c) => {
   });
   return c.json({ ok: result.ok, mode: result.mode, error: result.error });
 });
+
+// ── Background auto-scan ─────────────────────────────────────────────────────
+// Re-scan every watched channel periodically so new uploads trigger texts
+// without anyone opening the app.
+const SCAN_INTERVAL_MS = Number(process.env.SCAN_INTERVAL_MINUTES ?? 30) * 60_000;
+setInterval(() => {
+  for (const ch of db.getChannels()) {
+    scanChannelAndSave(ch.id, ch.name, 5).catch((e) =>
+      console.error(`Auto-scan failed for ${ch.name}:`, e.message),
+    );
+  }
+}, SCAN_INTERVAL_MS);
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 const PORT = Number(process.env.PORT ?? 4242);

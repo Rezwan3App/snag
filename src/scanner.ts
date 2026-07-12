@@ -91,24 +91,44 @@ const PROMO_RULES: { pattern: RegExp; label: string }[] = [
 ];
 
 // Sponsor/affiliate URLs that usually carry the deal (e.g. ridge.com/MKBHD)
-const DEAL_URL_RE = /https?:\/\/(?:www\.)?([a-z0-9-]+\.[a-z]{2,})(\/[A-Za-z0-9_\-]+)?/gi;
+const DEAL_URL_RE = /https?:\/\/(?:www\.)?((?:[a-z0-9-]+\.)+[a-z]{2,})(\/[A-Za-z0-9_\-]+)?/gi;
 const GENERIC_DOMAINS = new Set([
   "youtube.com", "youtu.be", "twitter.com", "x.com", "instagram.com", "facebook.com",
   "tiktok.com", "discord.gg", "discord.com", "patreon.com", "twitch.tv", "goo.gl",
   "bit.ly", "linktr.ee", "spotify.com", "apple.com", "threads.net", "reddit.com",
 ]);
 
-function findDealUrl(description: string): string | null {
-  const matches = [...description.matchAll(DEAL_URL_RE)];
-  for (const m of matches) {
-    const domain = m[1].toLowerCase();
+// Find the sponsor link closest to a specific point in the description, so a
+// deal gets paired with its own URL instead of the first sponsor link overall.
+function findDealUrl(description: string, nearIndex?: number): string | null {
+  const matches = [...description.matchAll(DEAL_URL_RE)].filter((m) => {
+    // Compare against the base domain so subdomains (e.g. m.youtube.com) are caught.
+    const baseDomain = m[1].toLowerCase().split(".").slice(-2).join(".");
     const path = m[2];
     // a sponsor link usually has a path segment (the creator's code) and isn't a social domain
-    if (!GENERIC_DOMAINS.has(domain) && path && path.length > 1) {
-      return m[0];
+    return !GENERIC_DOMAINS.has(baseDomain) && path && path.length > 1;
+  });
+  if (matches.length === 0) return null;
+  if (nearIndex === undefined) return matches[0][0];
+
+  // A link on the same line as the deal text is almost always its link.
+  const lineStart = description.lastIndexOf("\n", nearIndex) + 1;
+  let lineEnd = description.indexOf("\n", nearIndex);
+  if (lineEnd === -1) lineEnd = description.length;
+  const sameLine = matches.find((m) => (m.index ?? 0) >= lineStart && (m.index ?? 0) < lineEnd);
+  if (sameLine) return sameLine[0];
+
+  // Otherwise fall back to the closest link within the same paragraph.
+  let best = matches[0];
+  let bestDist = Infinity;
+  for (const m of matches) {
+    const dist = Math.abs((m.index ?? 0) - nearIndex);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = m;
     }
   }
-  return null;
+  return bestDist <= 300 ? best[0] : null;
 }
 
 const MONTHS: Record<string, number> = {
@@ -167,10 +187,9 @@ function parseExpiry(description: string): { iso: string; text: string } | null 
   return null;
 }
 
-function detectDeals(description: string): DetectedDeal[] {
+export function detectDeals(description: string): DetectedDeal[] {
   if (!description) return [];
   const found: DetectedDeal[] = [];
-  const dealUrl = findDealUrl(description);
   const expiry = parseExpiry(description);
 
   for (const rule of PROMO_RULES) {
@@ -188,13 +207,26 @@ function detectDeals(description: string): DetectedDeal[] {
     if (end === -1) end = Math.min(description.length, idx + 160);
     const context = description.slice(start, end).trim().replace(/\s+/g, " ").slice(0, 200);
 
-    const dupe = found.some((f) => f.label === rule.label && f.code === code);
-    if (dupe) continue;
-
-    found.push({ label: rule.label, code, context, url: dealUrl, expiresAt: expiry?.iso ?? null, expiryText: expiry?.text ?? null });
+    found.push({
+      label: rule.label,
+      code,
+      context,
+      url: findDealUrl(description, idx),
+      expiresAt: expiry?.iso ?? null,
+      expiryText: expiry?.text ?? null,
+    });
   }
 
-  return found;
+  // Dedupe: several rules often match the same sponsor sentence. Keep one deal
+  // per (code or context), preferring entries that captured an actual code.
+  const deduped: DetectedDeal[] = [];
+  for (const deal of found.sort((a, b) => Number(b.code !== null) - Number(a.code !== null))) {
+    const dupe = deduped.some(
+      (d) => (deal.code !== null && d.code === deal.code) || d.context === deal.context,
+    );
+    if (!dupe) deduped.push(deal);
+  }
+  return deduped;
 }
 
 // ── RSS channel fetcher (includes title + description + publish date) ────────
@@ -216,7 +248,7 @@ function decodeEntities(s: string): string {
     .replace(/&#39;/g, "'");
 }
 
-export async function fetchRssVideos(channelId: string, max = 5): Promise<RssVideo[]> {
+async function fetchRssXml(channelId: string): Promise<string> {
   const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
   let xml = "";
   let lastStatus = 0;
@@ -231,7 +263,11 @@ export async function fetchRssVideos(channelId: string, max = 5): Promise<RssVid
     await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
   }
   if (!xml) throw new Error(`Could not load this channel's videos (${lastStatus}).`);
+  return xml;
+}
 
+export async function fetchRssVideos(channelId: string, max = 5): Promise<RssVideo[]> {
+  const xml = await fetchRssXml(channelId);
   const videos: RssVideo[] = [];
   const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
   let m: RegExpExecArray | null;
@@ -254,12 +290,15 @@ export async function fetchRssVideos(channelId: string, max = 5): Promise<RssVid
   return videos;
 }
 
-// ── Channel metadata resolver (name from search; used as fallback) ───────────
+// ── Channel metadata resolver (feed title; used as fallback) ─────────────────
 
 export async function resolveChannelName(channelId: string): Promise<string> {
   try {
-    const videos = await fetchRssVideos(channelId, 1);
-    return videos.length ? videos[0].title : channelId;
+    const xml = await fetchRssXml(channelId);
+    // The feed-level <title> (before the first <entry>) is the channel name.
+    const head = xml.slice(0, xml.indexOf("<entry>"));
+    const title = head.match(/<title>([^<]+)<\/title>/);
+    return title ? decodeEntities(title[1]) : channelId;
   } catch {
     return channelId;
   }
