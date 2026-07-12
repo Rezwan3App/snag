@@ -1,8 +1,10 @@
-# Snag
+# Snag 🎯
 
-Find the promo codes and deals buried in YouTube videos, without watching the full thing.
+**Find the promo codes and deals buried in YouTube videos, without watching the full thing.**
 
-Creators drop discount codes in sponsor reads and video descriptions, then the video scrolls out of your feed and the code is gone. Snag watches the channels you follow, scans every new upload's description, and pulls out the codes, sponsor links, and expiry dates. If you add your phone number, it texts them to you.
+🔗 **Live demo:** [snag-2232.onrender.com](https://snag-2232.onrender.com) *(free tier, first load may take ~30s to wake up)*
+
+Creators drop discount codes in sponsor reads and video descriptions. Then the video scrolls out of your feed and the code is gone. Snag watches the channels you follow, scans every new upload's description, and pulls out the codes, sponsor links, and expiry dates. Add your phone number and it texts them to you.
 
 ## How it works
 
@@ -12,7 +14,7 @@ Creators drop discount codes in sponsor reads and video descriptions, then the v
 4. New deals are texted to you via Twilio. Without Twilio credentials, Snag runs in demo mode and logs the message it would have sent.
 5. A background job re-scans every watched channel on an interval, so new uploads get caught automatically.
 
-## Running it
+## Running it locally
 
 Requires [Bun](https://bun.sh).
 
@@ -23,7 +25,7 @@ bun run dev
 
 Open http://localhost:4242.
 
-## Tests
+Run the test suite with:
 
 ```sh
 bun test
@@ -38,24 +40,24 @@ All optional, via environment variables:
 | `PORT` | Server port | `4242` |
 | `SCAN_INTERVAL_MINUTES` | How often watched channels are re-scanned | `30` |
 | `TWILIO_ACCOUNT_SID` | Twilio credentials for real SMS | demo mode |
-| `TWILIO_AUTH_TOKEN` | | demo mode |
+| `TWILIO_AUTH_TOKEN` | Twilio auth token | demo mode |
 | `TWILIO_FROM_NUMBER` | Sending phone number | demo mode |
 
 ## Stack
 
-- [Bun](https://bun.sh) runtime, [Hono](https://hono.dev) server
+- [Bun](https://bun.sh) runtime with a [Hono](https://hono.dev) server
 - Vanilla HTML/CSS/JS frontend in `public/`
 - JSON file storage (`ytscan.json`, created at runtime and gitignored)
 - YouTube channel RSS feeds for video data, YouTube search scraping for channel lookup
 
-## Deploying
+## Deploying your own
 
-Snag is a server app (it scans in the background and sends texts), so it needs a host that runs a process — Render, Railway, or Fly.io free tiers all work. Static hosts like GitHub Pages can't run it.
+Snag is a server app (it scans in the background and sends texts), so it needs a host that runs a process. Render, Railway, or Fly.io free tiers all work; static hosts like GitHub Pages can't run it.
 
-A [render.yaml](render.yaml) blueprint is included. To deploy on Render's free tier:
+A [render.yaml](render.yaml) blueprint is included. On Render:
 
 1. Create an account at [render.com](https://render.com) and connect your GitHub.
 2. Click **New → Blueprint**, pick this repo, and deploy.
-3. (Optional) Add `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_FROM_NUMBER` as environment variables to send real texts.
+3. (Optional) Add the three Twilio environment variables to send real texts.
 
-Free-tier caveats: the service sleeps after 15 minutes of inactivity (background scans pause while asleep), and the JSON data file resets on restarts since free instances have no persistent disk. Fine for a demo; for always-on alerts use a paid instance or swap in a hosted database.
+Free-tier notes: the service sleeps after 15 minutes of inactivity (background scans pause while asleep), and the JSON data file resets on restarts since free instances have no persistent disk. Fine for a demo; for always-on alerts use a paid instance or swap in a hosted database.
