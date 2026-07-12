@@ -50,4 +50,12 @@ All optional, via environment variables:
 
 ## Deploying
 
-Snag is a server app (it scans in the background and sends texts), so it needs a host that runs a process — Render, Railway, or Fly.io free tiers all work. Static hosts like GitHub Pages can't run it. On Render: create a Web Service from this repo, set the build command to `bun install` and the start command to `bun run start`.
+Snag is a server app (it scans in the background and sends texts), so it needs a host that runs a process — Render, Railway, or Fly.io free tiers all work. Static hosts like GitHub Pages can't run it.
+
+A [render.yaml](render.yaml) blueprint is included. To deploy on Render's free tier:
+
+1. Create an account at [render.com](https://render.com) and connect your GitHub.
+2. Click **New → Blueprint**, pick this repo, and deploy.
+3. (Optional) Add `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_FROM_NUMBER` as environment variables to send real texts.
+
+Free-tier caveats: the service sleeps after 15 minutes of inactivity (background scans pause while asleep), and the JSON data file resets on restarts since free instances have no persistent disk. Fine for a demo; for always-on alerts use a paid instance or swap in a hosted database.

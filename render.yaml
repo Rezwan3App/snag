@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: snag
+    runtime: node # Render's Node environment ships with Bun preinstalled
+    plan: free
+    buildCommand: bun install
+    startCommand: bun run start
+    envVars:
+      - key: SCAN_INTERVAL_MINUTES
+        value: "30"
+      # Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER in
+      # the Render dashboard to send real texts; without them Snag runs in
+      # demo mode and logs the messages it would send.
