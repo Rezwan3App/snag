@@ -3,6 +3,5 @@ node_modules/
 *.log
 dist/
 .bun/
-dealdrop.json
-ytscan.json
+snag.json
 bun.lock

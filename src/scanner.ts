@@ -304,14 +304,9 @@ export async function resolveChannelName(channelId: string): Promise<string> {
   }
 }
 
-// ── Public: preview a channel's last N videos + deals (no save) ──────────────
+// ── Shared: attach detected deals to a batch of RSS videos ───────────────────
 
-export async function previewChannel(
-  channelId: string,
-  channelName: string,
-  max = 5,
-): Promise<ScannedVideo[]> {
-  const videos = await fetchRssVideos(channelId, max);
+function toScannedVideos(videos: RssVideo[]): ScannedVideo[] {
   return videos.map((v) => ({
     id: v.id,
     title: v.title,
@@ -321,6 +316,12 @@ export async function previewChannel(
   }));
 }
 
+// ── Public: preview a channel's last N videos + deals (no save) ──────────────
+
+export async function previewChannel(channelId: string, max = 5): Promise<ScannedVideo[]> {
+  return toScannedVideos(await fetchRssVideos(channelId, max));
+}
+
 // ── Public: scan + persist deals for a channel, then notify ──────────────────
 
 export async function scanChannelAndSave(
@@ -328,14 +329,13 @@ export async function scanChannelAndSave(
   channelName: string,
   max = 5,
 ): Promise<{ videos: ScannedVideo[]; newDeals: number }> {
-  const videos = await fetchRssVideos(channelId, max);
+  const scanned = toScannedVideos(await fetchRssVideos(channelId, max));
   const freshDeals: any[] = [];
 
-  for (const v of videos) {
-    const deals = detectDeals(v.description);
+  for (const v of scanned) {
     db.markVideoScanned(v.id);
 
-    for (const d of deals) {
+    for (const d of v.deals) {
       if (db.dealExists(v.id, d.code, d.label)) continue;
       const saved = db.addDeal({
         videoId: v.id,
@@ -357,13 +357,5 @@ export async function scanChannelAndSave(
     await notifyMissedDeals(freshDeals, channelName);
   }
 
-  const allVideos: ScannedVideo[] = videos.map((v) => ({
-    id: v.id,
-    title: v.title,
-    url: v.url,
-    publishedAt: v.publishedAt,
-    deals: detectDeals(v.description),
-  }));
-
-  return { videos: allVideos, newDeals: freshDeals.length };
+  return { videos: scanned, newDeals: freshDeals.length };
 }

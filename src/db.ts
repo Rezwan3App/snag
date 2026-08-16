@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 
-const DB_PATH = "./ytscan.json";
+const DB_PATH = "./snag.json";
 
 interface Channel {
   id: string;
@@ -75,88 +75,83 @@ function save(data: DbData) {
   writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
 }
 
+// Every write follows the same load → mutate → save shape; do it once here.
+function mutate<T>(fn: (data: DbData) => T): T {
+  const data = load();
+  const result = fn(data);
+  save(data);
+  return result;
+}
+
 export const db = {
   getChannels: (): Channel[] => load().channels,
 
-  addChannel: (channel: Omit<Channel, "addedAt">): Channel => {
-    const data = load();
-    const existing = data.channels.find((c) => c.id === channel.id);
-    if (existing) return existing;
-    const entry: Channel = { ...channel, addedAt: new Date().toISOString() };
-    data.channels.push(entry);
-    save(data);
-    return entry;
-  },
+  addChannel: (channel: Omit<Channel, "addedAt">): Channel =>
+    mutate((data) => {
+      const existing = data.channels.find((c) => c.id === channel.id);
+      if (existing) return existing;
+      const entry: Channel = { ...channel, addedAt: new Date().toISOString() };
+      data.channels.push(entry);
+      return entry;
+    }),
 
-  removeChannel: (id: string) => {
-    const data = load();
-    data.channels = data.channels.filter((c) => c.id !== id);
-    save(data);
-  },
+  removeChannel: (id: string) =>
+    mutate((data) => {
+      data.channels = data.channels.filter((c) => c.id !== id);
+    }),
 
   getDeals: (): Deal[] => load().deals,
 
   dealExists: (videoId: string, code: string | null, label: string): boolean =>
     load().deals.some((d) => d.videoId === videoId && d.code === code && d.label === label),
 
-  addDeal: (deal: Omit<Deal, "id" | "detectedAt">): Deal => {
-    const data = load();
-    const entry: Deal = { ...deal, id: data.nextDealId++, detectedAt: new Date().toISOString() };
-    data.deals.unshift(entry);
-    save(data);
-    return entry;
-  },
+  addDeal: (deal: Omit<Deal, "id" | "detectedAt">): Deal =>
+    mutate((data) => {
+      const entry: Deal = { ...deal, id: data.nextDealId++, detectedAt: new Date().toISOString() };
+      data.deals.unshift(entry);
+      return entry;
+    }),
 
-  removeDeal: (id: number) => {
-    const data = load();
-    data.deals = data.deals.filter((d) => d.id !== id);
-    save(data);
-  },
+  removeDeal: (id: number) =>
+    mutate((data) => {
+      data.deals = data.deals.filter((d) => d.id !== id);
+    }),
 
   isVideoScanned: (videoId: string): boolean => load().scannedVideos.includes(videoId),
 
-  markVideoScanned: (videoId: string) => {
-    const data = load();
-    if (!data.scannedVideos.includes(videoId)) {
-      data.scannedVideos.push(videoId);
-      save(data);
-    }
-  },
+  markVideoScanned: (videoId: string) =>
+    mutate((data) => {
+      if (!data.scannedVideos.includes(videoId)) data.scannedVideos.push(videoId);
+    }),
 
   // ── Subscriber (single user for MVP) ──────────────────────────────────────
   getSubscriber: (): Subscriber | null => load().subscriber,
 
-  setSubscriber: (phone: string): Subscriber => {
-    const data = load();
-    data.subscriber = { phone, enabled: true, subscribedAt: new Date().toISOString() };
-    save(data);
-    return data.subscriber;
-  },
+  setSubscriber: (phone: string): Subscriber =>
+    mutate((data) => {
+      data.subscriber = { phone, enabled: true, subscribedAt: new Date().toISOString() };
+      return data.subscriber!;
+    }),
 
-  setSubscriberEnabled: (enabled: boolean): Subscriber | null => {
-    const data = load();
-    if (data.subscriber) {
-      data.subscriber.enabled = enabled;
-      save(data);
-    }
-    return data.subscriber;
-  },
+  setSubscriberEnabled: (enabled: boolean): Subscriber | null =>
+    mutate((data) => {
+      if (data.subscriber) data.subscriber.enabled = enabled;
+      return data.subscriber;
+    }),
 
-  removeSubscriber: () => {
-    const data = load();
-    data.subscriber = null;
-    save(data);
-  },
+  removeSubscriber: () =>
+    mutate((data) => {
+      data.subscriber = null;
+    }),
 
   // ── Notifications log ─────────────────────────────────────────────────────
   getNotifications: (): Notification[] => load().notifications,
 
-  addNotification: (n: Omit<Notification, "id" | "sentAt">): Notification => {
-    const data = load();
-    const entry: Notification = { ...n, id: data.nextNotificationId++, sentAt: new Date().toISOString() };
-    data.notifications.unshift(entry);
-    if (data.notifications.length > 50) data.notifications = data.notifications.slice(0, 50);
-    save(data);
-    return entry;
-  },
+  addNotification: (n: Omit<Notification, "id" | "sentAt">): Notification =>
+    mutate((data) => {
+      const entry: Notification = { ...n, id: data.nextNotificationId++, sentAt: new Date().toISOString() };
+      data.notifications.unshift(entry);
+      if (data.notifications.length > 50) data.notifications = data.notifications.slice(0, 50);
+      return entry;
+    }),
 };

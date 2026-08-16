@@ -6,177 +6,158 @@
 <title>Snag — Never miss a creator deal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
   :root{
-    --bg:#ffffff;
-    --bg2:#f5f8ff;
-    --panel:#ffffff;
-    --ink:#0a1628;
-    --ink2:#3d4f66;
-    --muted:#6b7c93;
-    --muted2:#9aa8bd;
-    --line:#e3ebf6;
-    --line2:#d0dcec;
-    --blue:#0a66ff;
-    --blue-dark:#0047cc;
-    --blue-soft:#e8f0ff;
-    --blue-softer:#f3f7ff;
-    --green:#0a9e5c;
-    --green-soft:#e6f7ef;
-    --amber:#b06f00;
-    --amber-soft:#fff4e0;
-    --shadow:0 1px 3px rgba(10,40,90,.06),0 8px 24px rgba(10,40,90,.06);
-    --shadow-lg:0 4px 12px rgba(10,40,90,.08),0 24px 48px rgba(10,40,90,.10);
-    --r:16px;
+    --bg:#f7f2ea;
+    --panel:#fffcf6;
+    --ink:#1c150f;
+    --ink2:#4d4032;
+    --muted:#5f5443;
+    --muted2:#736858;
+    --line:#e6dcc8;
+    --line2:#d6c8ac;
+    --accent:#c1501f;
+    --accent-dark:#9c3d15;
+    --accent-soft:#f4e0cd;
+    --good:#3c6b3f;
+    --good-dark:#2c5330;
+    --good-soft:#e4ede1;
+    --warn:#8c5505;
+    --warn-soft:#f6e8ca;
+    --bad:#a13a2e;
+    --bad-soft:#f5e0da;
+    --shadow:0 1px 2px rgba(28,20,13,.05),0 10px 24px rgba(28,20,13,.08);
+    --ease:cubic-bezier(.16,1,.3,1);
+    --r-sm:6px;
+    --r-md:10px;
+    --r-lg:16px;
   }
 
   html{scroll-behavior:smooth}
   body{
     background:var(--bg);
     color:var(--ink);
-    font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     -webkit-font-smoothing:antialiased;
     line-height:1.5;
   }
+  a{color:inherit}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
 
   /* NAV */
   nav{
     position:sticky;top:0;z-index:100;
     display:flex;align-items:center;gap:14px;
-    padding:0 28px;height:60px;
-    background:rgba(255,255,255,.85);
-    backdrop-filter:saturate(180%) blur(20px);
-    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    padding:0 28px;height:58px;
+    background:rgba(247,242,234,.88);
+    backdrop-filter:saturate(160%) blur(14px);
+    -webkit-backdrop-filter:saturate(160%) blur(14px);
     border-bottom:1px solid var(--line);
   }
-  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
-  .brand-mark{
-    width:32px;height:32px;border-radius:9px;
-    background:linear-gradient(135deg,var(--blue),#3b82ff);
-    display:grid;place-items:center;color:#fff;font-weight:900;font-size:15px;
-    box-shadow:0 4px 14px rgba(10,102,255,.35);
-  }
-  .brand-name{font-size:17px;font-weight:800;letter-spacing:-.4px}
-  .brand-name b{color:var(--blue)}
+  .brand{display:flex;align-items:baseline;text-decoration:none;color:var(--ink)}
+  .brand-name{font-family:"Zilla Slab",serif;font-size:21px;font-weight:600;letter-spacing:-.3px}
   .nav-spacer{flex:1}
-  .nav-link{font-size:14px;font-weight:600;color:var(--muted);text-decoration:none;padding:8px 12px;border-radius:9px;transition:.15s}
-  .nav-link:hover{color:var(--blue);background:var(--blue-softer)}
+  .nav-link{font-size:14px;font-weight:600;color:var(--muted);text-decoration:none;padding:8px 12px;border-radius:var(--r-sm);transition:.15s}
+  .nav-link:hover{color:var(--accent-dark);background:var(--accent-soft)}
 
   /* HERO */
   .hero{
     text-align:center;
-    padding:72px 24px 40px;
-    max-width:760px;margin:0 auto;
-    position:relative;
+    padding:76px 24px 40px;
+    max-width:720px;margin:0 auto;
   }
-  .pill{
-    display:inline-flex;align-items:center;gap:7px;
-    background:var(--blue-soft);color:var(--blue-dark);
-    border-radius:999px;padding:6px 14px;
-    font-size:13px;font-weight:600;margin-bottom:24px;
-  }
-  .pill-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);animation:blink 2s infinite}
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-
   h1.hero-title{
-    font-size:clamp(48px,9vw,84px);
-    font-weight:900;letter-spacing:-3px;line-height:1.02;
-    margin-bottom:10px;
-  }
-  h1.hero-title em{font-style:normal;color:var(--blue)}
-  .hero-tag{
-    font-size:clamp(20px,3vw,28px);font-weight:800;
-    letter-spacing:-.6px;color:var(--ink);margin-bottom:14px;
+    font-family:"Zilla Slab",serif;
+    font-size:clamp(38px,6vw,58px);
+    font-weight:600;letter-spacing:-1px;line-height:1.06;
+    margin-bottom:18px;
   }
   .hero-sub{
-    font-size:clamp(15px,2vw,18px);color:var(--ink2);
-    max-width:540px;margin:0 auto 36px;line-height:1.55;
+    font-size:clamp(15px,2vw,17px);color:var(--ink2);
+    max-width:520px;margin:0 auto 36px;line-height:1.6;
   }
 
   /* SEARCH BAR */
   .search-wrap{max-width:560px;margin:0 auto;position:relative}
   .search-box{
     display:flex;align-items:center;gap:10px;
-    background:#fff;border:2px solid var(--line2);
-    border-radius:16px;padding:6px 6px 6px 18px;
-    box-shadow:var(--shadow);transition:.18s;
+    background:var(--panel);border:1.5px solid var(--line2);
+    border-radius:var(--r-md);padding:6px 6px 6px 16px;
+    transition:.18s;
   }
-  .search-box:focus-within{border-color:var(--blue);box-shadow:0 0 0 4px var(--blue-soft),var(--shadow-lg)}
-  .search-icon{color:var(--muted2);flex-shrink:0;font-size:18px}
+  .search-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .search-icon{color:var(--muted2);flex-shrink:0;display:flex}
   .search-input{
-    flex:1;border:none;outline:none;background:none;
+    flex:1;min-width:0;border:none;outline:none;background:none;
     font-family:inherit;font-size:16px;font-weight:500;color:var(--ink);padding:12px 0;
   }
   .search-input::placeholder{color:var(--muted2)}
   .search-btn{
-    background:var(--blue);color:#fff;border:none;
-    border-radius:11px;padding:12px 22px;
+    background:var(--accent);color:#fff;border:none;
+    border-radius:var(--r-sm);padding:12px 22px;
     font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
     transition:.15s;white-space:nowrap;
   }
-  .search-btn:hover{background:var(--blue-dark)}
+  .search-btn:hover{background:var(--accent-dark)}
   .search-btn:disabled{opacity:.5;cursor:not-allowed}
-  .search-hint{font-size:13px;color:var(--muted);margin-top:14px}
-  .search-hint b{color:var(--ink2);font-weight:600}
   .chip-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:16px}
   .ex-chip{
-    background:var(--blue-softer);border:1px solid var(--line);
-    color:var(--ink2);border-radius:999px;padding:6px 14px;
+    background:var(--panel);border:1px solid var(--line);
+    color:var(--ink2);border-radius:var(--r-sm);padding:6px 13px;
     font-size:13px;font-weight:600;cursor:pointer;transition:.15s;
   }
-  .ex-chip:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-soft)}
+  .ex-chip:hover{border-color:var(--accent);color:var(--accent-dark);background:var(--accent-soft)}
 
   /* SEARCH RESULTS (channel suggestions) */
   .results-pop{
     max-width:560px;margin:14px auto 0;
-    background:#fff;border:1px solid var(--line);border-radius:16px;
-    box-shadow:var(--shadow-lg);overflow:hidden;
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);
+    box-shadow:var(--shadow);overflow:hidden;
     display:none;
   }
-  .results-pop.show{display:block;animation:pop .2s ease}
-  @keyframes pop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .results-pop.show{display:block;animation:reveal .22s var(--ease)}
+  @keyframes reveal{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
   .res-head{padding:12px 18px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);border-bottom:1px solid var(--line)}
   .res-item{
-    display:flex;align-items:center;gap:14px;padding:14px 18px;cursor:pointer;
-    border-bottom:1px solid var(--line);transition:.12s;text-align:left;
+    width:100%;display:flex;align-items:center;gap:14px;padding:14px 18px;cursor:pointer;
+    border:none;border-bottom:1px solid var(--line);background:none;transition:.12s;text-align:left;
   }
   .res-item:last-child{border-bottom:none}
-  .res-item:hover{background:var(--blue-softer)}
-  .res-avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--line)}
+  .res-item:hover{background:var(--accent-soft)}
+  .res-avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--line)}
   .res-info{flex:1;min-width:0}
   .res-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .res-sub{font-size:13px;color:var(--muted);margin-top:1px}
-  .res-go{color:var(--blue);font-size:13px;font-weight:700;flex-shrink:0}
+  .res-go{color:var(--accent-dark);font-size:13px;font-weight:700;flex-shrink:0;display:flex;align-items:center;gap:4px}
 
   /* MAIN container */
-  .wrap{max-width:860px;margin:0 auto;padding:0 24px}
+  .wrap{max-width:840px;margin:0 auto;padding:0 24px}
 
   /* SECTION TITLES */
   .sec-title{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 4px}
-  .sec-lead{font-size:15px;color:var(--ink2);margin-bottom:18px}
+  .sec-lead{font-size:15px;color:var(--ink2);margin-bottom:26px}
 
   /* PREVIEW PANEL */
-  .preview{margin:8px 0 48px;display:none}
-  .preview.show{display:block;animation:pop .25s ease}
+  .preview{margin:8px 0 52px;display:none}
+  .preview.show{display:block;animation:reveal .28s var(--ease)}
   .preview-card{
-    background:#fff;border:1px solid var(--line);border-radius:20px;
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);
     box-shadow:var(--shadow);overflow:hidden;
   }
   .preview-top{
     display:flex;align-items:center;gap:16px;padding:22px 24px;
-    background:linear-gradient(135deg,var(--blue-softer),#fff);
     border-bottom:1px solid var(--line);
   }
-  .preview-avatar{width:60px;height:60px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid #fff;box-shadow:var(--shadow)}
+  .preview-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--panel);box-shadow:var(--shadow)}
   .preview-meta{flex:1;min-width:0}
-  .preview-name{font-size:20px;font-weight:800;letter-spacing:-.4px}
-  .preview-stat{font-size:14px;color:var(--muted);margin-top:2px}
+  .preview-name{font-family:"Zilla Slab",serif;font-size:21px;font-weight:600;letter-spacing:-.2px}
+  .preview-stat{font-size:14px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px}
   .preview-count{
-    background:var(--blue);color:#fff;border-radius:999px;
-    padding:5px 13px;font-size:13px;font-weight:700;flex-shrink:0;
+    background:var(--accent-soft);color:var(--accent-dark);border-radius:var(--r-sm);
+    padding:5px 12px;font-size:13px;font-weight:700;flex-shrink:0;
   }
 
   .vids{padding:8px 0}
@@ -185,177 +166,179 @@
   }
   .vid:last-child{border-bottom:none}
   .vid-idx{
-    width:26px;height:26px;border-radius:8px;background:var(--blue-softer);
-    color:var(--blue);font-size:13px;font-weight:800;
+    width:24px;height:24px;border-radius:var(--r-sm);background:var(--bg);
+    color:var(--muted);font-family:"Zilla Slab",serif;font-size:13px;font-weight:600;
     display:grid;place-items:center;flex-shrink:0;margin-top:2px;
   }
   .vid-body{flex:1;min-width:0}
   .vid-title{font-size:15px;font-weight:700;line-height:1.35;margin-bottom:6px}
   .vid-title a{color:var(--ink);text-decoration:none}
-  .vid-title a:hover{color:var(--blue)}
+  .vid-title a:hover{color:var(--accent-dark)}
   .vid-date{font-size:12px;color:var(--muted2);font-weight:600}
   .vid-deals{display:flex;flex-direction:column;gap:8px;margin-top:10px}
   .deal-line{
     display:flex;align-items:flex-start;gap:10px;
-    background:var(--green-soft);border:1px solid #c5ebd7;
-    border-radius:11px;padding:10px 13px;
+    background:var(--good-soft);border:1px solid #c9dcc7;
+    border-radius:var(--r-sm);padding:10px 13px;
   }
-  .deal-line.nocode{background:var(--amber-soft);border-color:#f0dcb0}
+  .deal-line.nocode{background:var(--warn-soft);border-color:#e6d5a4}
   .deal-badge{
     font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
-    color:var(--green);background:#fff;border:1px solid #c5ebd7;
-    border-radius:6px;padding:2px 7px;flex-shrink:0;white-space:nowrap;
+    color:var(--good-dark);background:var(--panel);border:1px solid #c9dcc7;
+    border-radius:4px;padding:2px 7px;flex-shrink:0;white-space:nowrap;
   }
-  .deal-line.nocode .deal-badge{color:var(--amber);border-color:#f0dcb0}
+  .deal-line.nocode .deal-badge{color:var(--warn);border-color:#e6d5a4}
   .deal-text{flex:1;font-size:13px;color:var(--ink2);line-height:1.45;min-width:0}
-  .deal-code{font-weight:800;color:var(--ink);font-family:ui-monospace,monospace;letter-spacing:.5px}
-  .deal-link{color:var(--blue);font-weight:700;text-decoration:none;word-break:break-all}
+  .deal-link{color:var(--accent-dark);font-weight:700;text-decoration:none;word-break:break-all}
   .deal-link:hover{text-decoration:underline}
   .vid-nodeal{font-size:13px;color:var(--muted2);margin-top:8px;font-style:italic}
 
   /* copyable code chip */
   .code-chip{
     display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-    background:#fff;border:1px solid #c5ebd7;border-radius:7px;
-    padding:2px 8px;font-family:ui-monospace,monospace;font-weight:800;
-    color:var(--ink);letter-spacing:.5px;font-size:12.5px;transition:all .12s;
+    background:var(--panel);border:1px solid #c9dcc7;border-radius:var(--r-sm);
+    padding:2px 8px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-weight:700;
+    color:var(--ink);letter-spacing:.4px;font-size:12.5px;transition:all .12s;
     vertical-align:middle;
   }
-  .code-chip:hover{border-color:var(--green);background:var(--green-soft)}
-  .code-chip .ico{font-size:11px;opacity:.55}
-  .code-chip.copied{background:var(--green);color:#fff;border-color:var(--green)}
+  .code-chip:hover{border-color:var(--good);background:var(--good-soft)}
+  .code-chip .ico{display:inline-flex;opacity:.55}
+  .code-chip.copied{background:var(--good);color:#fff;border-color:var(--good)}
   .code-chip.copied .ico{opacity:1}
 
   /* expiry pills */
   .expiry{
     display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;
-    border-radius:6px;padding:2px 7px;margin-top:6px;white-space:nowrap;
+    border-radius:4px;padding:2px 7px;margin-top:6px;white-space:nowrap;
   }
-  .expiry.ok{background:#eef6ff;color:#1d6fd6;border:1px solid #cfe2fb}
-  .expiry.soon{background:var(--amber-soft);color:#a9710a;border:1px solid #f0dcb0}
-  .expiry.expired{background:#fbeceb;color:#c5302a;border:1px solid #f3cdcb}
+  .expiry.ok{background:var(--bg);color:var(--ink2);border:1px solid var(--line2)}
+  .expiry.soon{background:var(--warn-soft);color:var(--warn);border:1px solid #e6d5a4}
+  .expiry.expired{background:var(--bad-soft);color:var(--bad);border:1px solid #e6c3ba}
 
   /* CTA inside preview */
   .preview-cta{
-    padding:22px 24px;background:var(--blue-softer);border-top:1px solid var(--line);
+    padding:22px 24px;background:var(--bg);border-top:1px solid var(--line);
   }
-  .cta-title{font-size:16px;font-weight:800;margin-bottom:4px}
+  .cta-title{font-size:16px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px}
   .cta-sub{font-size:14px;color:var(--ink2);margin-bottom:16px}
   .cta-form{display:flex;gap:10px;flex-wrap:wrap}
   .cta-input{
-    flex:1;min-width:200px;border:1.5px solid var(--line2);border-radius:12px;
-    padding:13px 15px;font-family:inherit;font-size:15px;font-weight:500;outline:none;background:#fff;transition:.15s;
+    flex:1;min-width:200px;border:1.5px solid var(--line2);border-radius:var(--r-sm);
+    padding:13px 15px;font-family:inherit;font-size:15px;font-weight:500;outline:none;background:var(--panel);transition:.15s;
   }
-  .cta-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+  .cta-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .btn{
-    border:none;border-radius:12px;padding:13px 22px;
+    border:none;border-radius:var(--r-sm);padding:13px 22px;
     font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap;
     display:inline-flex;align-items:center;gap:8px;justify-content:center;
   }
-  .btn-blue{background:var(--blue);color:#fff}
-  .btn-blue:hover{background:var(--blue-dark)}
-  .btn-blue:disabled{opacity:.5;cursor:not-allowed}
-  .btn-ghost{background:#fff;color:var(--ink2);border:1.5px solid var(--line2)}
-  .btn-ghost:hover{border-color:var(--blue);color:var(--blue)}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:var(--accent-dark)}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+  .btn-ghost{background:var(--panel);color:var(--ink2);border:1.5px solid var(--line2)}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent-dark)}
   .cta-note{font-size:12px;color:var(--muted);margin-top:12px;display:flex;align-items:center;gap:6px}
 
   .status{
-    margin-top:12px;border-radius:11px;padding:11px 14px;
+    margin-top:12px;border-radius:var(--r-sm);padding:11px 14px;
     font-size:13px;font-weight:600;display:none;align-items:center;gap:8px;
   }
   .status.show{display:flex}
-  .status.ok{background:var(--green-soft);color:var(--green);border:1px solid #c5ebd7}
-  .status.err{background:#fdeaea;color:#c5302a;border:1px solid #f5cccc}
-  .status.busy{background:var(--amber-soft);color:var(--amber);border:1px solid #f0dcb0}
+  .status.ok{background:var(--good-soft);color:var(--good-dark);border:1px solid #c9dcc7}
+  .status.err{background:var(--bad-soft);color:var(--bad);border:1px solid #e6c3ba}
+  .status.busy{background:var(--warn-soft);color:var(--warn);border:1px solid #e6d5a4}
 
-  /* HOW IT WORKS */
-  .how{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:8px 0 56px}
-  @media(max-width:680px){.how{grid-template-columns:1fr}}
-  .how-card{
-    background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px 22px;
-    box-shadow:var(--shadow);
+  /* HOW IT WORKS — connected process rail, not icon cards */
+  .steps{display:flex;gap:36px;list-style:none;position:relative;margin:8px 0 60px;padding-top:22px}
+  .steps::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:var(--line2)}
+  .step{flex:1;position:relative}
+  .step::before{content:"";position:absolute;top:-1px;left:0;width:26px;height:2px;background:var(--accent)}
+  .step-mark{font-family:"Zilla Slab",serif;font-size:15px;font-weight:600;color:var(--accent-dark)}
+  .step h3{font-size:16px;font-weight:800;margin:10px 0 6px;letter-spacing:-.2px}
+  .step p{font-size:14px;color:var(--ink2);line-height:1.55}
+  @media(max-width:680px){
+    .steps{flex-direction:column;gap:26px;padding-top:0}
+    .steps::before{display:none}
+    .step{padding-left:22px;border-left:2px solid var(--line2)}
+    .step::before{top:2px;left:-2px;width:2px;height:22px}
   }
-  .how-num{
-    width:34px;height:34px;border-radius:10px;background:var(--blue-soft);color:var(--blue);
-    font-weight:800;font-size:16px;display:grid;place-items:center;margin-bottom:14px;
-  }
-  .how-card h3{font-size:16px;font-weight:800;margin-bottom:6px;letter-spacing:-.3px}
-  .how-card p{font-size:14px;color:var(--ink2);line-height:1.5}
 
   /* WATCHED + SUBSCRIBER STATUS */
   .panel{
-    background:#fff;border:1px solid var(--line);border-radius:18px;
-    box-shadow:var(--shadow);padding:24px;margin-bottom:24px;
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);
+    padding:24px;margin-bottom:24px;
   }
   .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-  .panel-head h3{font-size:17px;font-weight:800;letter-spacing:-.3px}
+  .panel-head h3{font-size:16px;font-weight:800;letter-spacing:-.2px;display:flex;align-items:center;gap:9px;color:var(--ink)}
+  .panel-head h3 svg{color:var(--accent-dark);flex-shrink:0}
   .watched-list{display:flex;flex-direction:column;gap:10px}
   .watched-item{
     display:flex;align-items:center;gap:13px;padding:12px 14px;
-    background:var(--blue-softer);border:1px solid var(--line);border-radius:13px;
+    background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);
   }
-  .watched-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--line)}
+  .watched-avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--line)}
   .watched-name{flex:1;font-size:15px;font-weight:700;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .watched-actions{display:flex;gap:8px;flex-shrink:0}
   .icon-btn{
-    width:36px;height:36px;border-radius:10px;border:1.5px solid var(--line2);background:#fff;
-    cursor:pointer;font-size:15px;color:var(--muted);transition:.15s;display:grid;place-items:center;
+    width:34px;height:34px;border-radius:var(--r-sm);border:1.5px solid var(--line2);background:var(--panel);
+    cursor:pointer;color:var(--muted);transition:.15s;display:grid;place-items:center;
   }
-  .icon-btn:hover{border-color:var(--blue);color:var(--blue)}
-  .icon-btn.danger:hover{border-color:#e05a52;color:#e05a52}
+  .icon-btn:hover{border-color:var(--accent);color:var(--accent-dark)}
+  .icon-btn.danger:hover{border-color:var(--bad);color:var(--bad)}
   .empty-mini{font-size:14px;color:var(--muted);padding:8px 2px}
 
   .sub-status{
     display:flex;align-items:center;gap:10px;
-    background:var(--green-soft);border:1px solid #c5ebd7;border-radius:13px;padding:14px 16px;
+    background:var(--good-soft);border:1px solid #c9dcc7;border-radius:var(--r-sm);padding:14px 16px;
   }
-  .sub-dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(10,158,92,.18)}
+  .sub-dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px rgba(60,107,63,.18);flex-shrink:0}
   .sub-info{flex:1;font-size:14px}
-  .sub-info b{color:var(--green-dark,#087a47)}
+  .sub-info b{color:var(--good-dark)}
   .demo-badge{
     font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
-    background:var(--amber-soft);color:var(--amber);border:1px solid #f0dcb0;border-radius:6px;padding:3px 8px;
+    background:var(--warn-soft);color:var(--warn);border:1px solid #e6d5a4;border-radius:4px;padding:3px 8px;
   }
 
   /* deal history feed */
   .hist-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  .hist-filter{display:inline-flex;background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:2px}
+  .hist-filter{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);padding:2px}
   .hist-tab{
     border:none;background:none;cursor:pointer;font-size:13px;font-weight:700;
-    color:var(--muted);padding:5px 12px;border-radius:7px;transition:all .12s;font-family:inherit;
+    color:var(--muted);padding:5px 12px;border-radius:4px;transition:all .12s;font-family:inherit;
   }
-  .hist-tab.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .hist-tab.active{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(28,20,13,.1)}
   .hist-list{display:flex;flex-direction:column;gap:10px}
   .hist-item{
     display:flex;align-items:flex-start;gap:12px;
-    background:var(--soft);border:1px solid var(--line);
-    border-radius:12px;padding:13px 15px;transition:border-color .12s;
+    background:var(--bg);border:1px solid var(--line);
+    border-radius:var(--r-sm);padding:13px 15px;transition:border-color .12s;
   }
-  .hist-item:hover{border-color:#d4d4d8}
-  .hist-item.is-expired{opacity:.62}
+  .hist-item:hover{border-color:var(--line2)}
+  .hist-item.is-expired{opacity:.6}
   .hist-main{flex:1;min-width:0}
   .hist-row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
-  .hist-ch{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .hist-ch{font-size:12px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:5px}
+  .hist-ch svg{flex-shrink:0}
   .hist-ctx{font-size:13px;color:var(--ink2);line-height:1.45}
-  .hist-vid{font-size:12px;color:var(--blue);font-weight:700;text-decoration:none;display:inline-block;margin-top:5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hist-vid{font-size:12px;color:var(--accent-dark);font-weight:700;text-decoration:none;display:inline-block;margin-top:5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .hist-vid:hover{text-decoration:underline}
   .hist-del{flex-shrink:0}
 
   /* FOOTER */
   footer{border-top:1px solid var(--line);padding:32px 24px;text-align:center;color:var(--muted);font-size:13px;margin-top:40px}
-  footer a{color:var(--blue);text-decoration:none;font-weight:600}
+  footer a{color:var(--accent-dark);text-decoration:none;font-weight:600}
 
   /* TOAST */
   .toast{
-    position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);
-    background:var(--ink);color:#fff;border-radius:13px;padding:13px 22px;
-    font-size:14px;font-weight:600;box-shadow:var(--shadow-lg);z-index:9999;opacity:0;pointer-events:none;
-    transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .25s;
+    position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(16px);
+    background:var(--ink);color:#fff;border-radius:var(--r-sm);padding:13px 22px;
+    font-size:14px;font-weight:600;box-shadow:var(--shadow);z-index:9999;opacity:0;pointer-events:none;
+    transition:transform .3s var(--ease),opacity .25s var(--ease);
   }
   .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 
   .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle}
-  .btn-ghost .spin,.status .spin{border-color:rgba(10,102,255,.3);border-top-color:var(--blue)}
+  .btn-ghost .spin,.status .spin{border-color:rgba(193,80,31,.3);border-top-color:var(--accent)}
   @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
@@ -363,7 +346,6 @@
 
 <nav>
   <a class="brand" href="/">
-    <div class="brand-mark">S</div>
     <span class="brand-name">Snag</span>
   </a>
   <div class="nav-spacer"></div>
@@ -372,14 +354,12 @@
 </nav>
 
 <section class="hero">
-  <div class="pill"><span class="pill-dot"></span>No more sitting through sponsor reads</div>
-  <h1 class="hero-title"><em>Snag</em></h1>
-  <p class="hero-tag">Find the creator deal. Skip the video.</p>
-  <p class="hero-sub">Search any YouTuber you love. Snag checks their latest videos for promo codes and discounts — and texts you the moment a new one drops.</p>
+  <h1 class="hero-title">Skip the video. Keep the deal.</h1>
+  <p class="hero-sub">Search any YouTuber. Snag scans their last five videos for promo codes and sponsor discounts, then texts you the moment a new one drops — no ten-minute intro required.</p>
 
   <div class="search-wrap">
     <div class="search-box">
-      <span class="search-icon">🔍</span>
+      <span class="search-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><path d="M14 14l-3.2-3.2"/></svg></span>
       <input class="search-input" id="searchInput" type="text" placeholder="Search a YouTuber — e.g. MKBHD, Linus Tech Tips…" autocomplete="off"/>
       <button class="search-btn" id="searchBtn">Search</button>
     </div>
@@ -406,38 +386,38 @@
   <!-- HOW IT WORKS -->
   <h2 class="sec-title" id="how">How it works</h2>
   <p class="sec-lead">Three steps. No account, no clutter.</p>
-  <div class="how">
-    <div class="how-card">
-      <div class="how-num">1</div>
+  <ol class="steps">
+    <li class="step">
+      <span class="step-mark">01</span>
       <h3>Search a creator</h3>
       <p>Type a YouTuber's name. We suggest matching channels with their subscriber counts.</p>
-    </div>
-    <div class="how-card">
-      <div class="how-num">2</div>
+    </li>
+    <li class="step">
+      <span class="step-mark">02</span>
       <h3>See their latest deals</h3>
       <p>We scan their last 5 videos and surface every promo code, discount, and sponsor link.</p>
-    </div>
-    <div class="how-card">
-      <div class="how-num">3</div>
+    </li>
+    <li class="step">
+      <span class="step-mark">03</span>
       <h3>Get them texted</h3>
       <p>Add your number and we'll text you new deals automatically — the second a video goes live.</p>
-    </div>
-  </div>
+    </li>
+  </ol>
 
   <!-- WATCHED CHANNELS -->
   <div id="watched">
     <div class="panel">
-      <div class="panel-head"><h3>📡 Channels you're watching</h3></div>
+      <div class="panel-head"><h3><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 10a5 5 0 0 1 8 0"/><path d="M2 7a9 9 0 0 1 12 0"/><circle cx="8" cy="13" r="1.3" fill="currentColor" stroke="none"/></svg> Channels you're watching</h3></div>
       <div class="watched-list" id="watchedList"><div class="empty-mini">Search a creator above and tap "Watch & text me deals" to start.</div></div>
     </div>
 
     <div class="panel" id="subPanel" style="display:none">
-      <div class="panel-head"><h3>💬 Text alerts</h3><span class="demo-badge" id="demoBadge" style="display:none">Demo mode</span></div>
+      <div class="panel-head"><h3><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5h12v7H6.5L3 13.5v-3H2z"/></svg> Text alerts</h3><span class="demo-badge" id="demoBadge" style="display:none">Demo mode</span></div>
       <div class="sub-status">
         <span class="sub-dot"></span>
         <div class="sub-info">Alerts on for <b id="subPhone"></b></div>
         <button class="btn btn-ghost" id="testBtn" style="padding:9px 16px;font-size:14px">Send test</button>
-        <button class="icon-btn danger" id="unsubBtn" title="Turn off">✕</button>
+        <button class="icon-btn danger" id="unsubBtn" title="Turn off"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
       </div>
       <div class="status" id="subStatus"></div>
     </div>
@@ -447,7 +427,7 @@
   <div id="history">
     <div class="panel">
       <div class="panel-head">
-        <h3>🗂️ Deal history</h3>
+        <h3><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l3 1.8"/></svg> Deal history</h3>
         <div class="hist-tools">
           <div class="hist-filter" id="histFilter">
             <button class="hist-tab active" data-f="all">All</button>
@@ -471,6 +451,19 @@
 <script>
 const API="";
 let currentChannel=null;
+
+// ── icons (inline SVG, used inside dynamically rendered markup) ──
+const ICON_CHEVRON=`<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>`;
+const ICON_COPY=`<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.2"/><path d="M2.5 10.5V3.5a1 1 0 0 1 1-1H10"/></svg>`;
+const ICON_CHECK=`<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>`;
+const ICON_CHECK_SM=`<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>`;
+const ICON_X_SM=`<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
+const ICON_X=`<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
+const ICON_REFRESH=`<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8A5 5 0 1 1 11.5 4.3"/><path d="M13 2.5V6h-3.5"/></svg>`;
+const ICON_CLOCK=`<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l3 1.8"/></svg>`;
+const ICON_TV=`<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="12" height="8.5" rx="1.3"/><path d="M5.5 4L8 1.5 10.5 4"/></svg>`;
+const ICON_PHONE=`<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="1.5" width="7" height="13" rx="1.5"/><path d="M7 12.2h2"/></svg>`;
+const ICON_LOCK=`<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="6.5" rx="1.2"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
 
 // ── helpers ──
 function $(id){return document.getElementById(id)}
@@ -500,7 +493,7 @@ async function doSearch(q){
               <div class="res-name">${c.name}</div>
               <div class="res-sub">${c.subscribers||""}</div>
             </div>
-            <span class="res-go">View deals →</span>
+            <span class="res-go">View deals ${ICON_CHEVRON}</span>
           </button>`).join("");
       pop.querySelectorAll(".res-item").forEach(item=>{
         item.addEventListener("click",()=>{
@@ -529,7 +522,7 @@ async function selectChannel(id,name,avatar){
     const r=await fetch(`${API}/api/channel/${id}/preview?name=${encodeURIComponent(name)}`).then(r=>r.json());
     renderPreview(r.videos||[]);
   }catch(e){
-    prev.innerHTML=`<div class="preview-card"><div class="preview-top"><div class="preview-meta"><div class="preview-name">${name}</div><div class="preview-stat" style="color:#c5302a">Couldn't load videos. Try again.</div></div></div></div>`;
+    prev.innerHTML=`<div class="preview-card"><div class="preview-top"><div class="preview-meta"><div class="preview-name">${name}</div><div class="preview-stat" style="color:var(--bad)">Couldn't load videos. Try again.</div></div></div></div>`;
   }
 }
 
@@ -581,13 +574,13 @@ function renderPreview(videos){
       </div>
       <div class="vids">${vidsHtml}</div>
       <div class="preview-cta">
-        <div class="cta-title">📲 Get ${c.name}'s deals texted to you</div>
+        <div class="cta-title">${ICON_PHONE} Get ${c.name}'s deals texted to you</div>
         <div class="cta-sub">We'll watch this channel and text you new promo codes automatically — so you never miss one again.</div>
         <div class="cta-form">
           <input class="cta-input" id="ctaPhone" type="tel" placeholder="${subscriberPhone?'Already subscribed':'Your phone number'}" ${subscriberPhone?'disabled':''} value="${subscriberPhone||''}"/>
-          <button class="btn btn-blue" id="ctaBtn">${isWatched?'✓ Watching':'Watch & text me deals'}</button>
+          <button class="btn btn-primary" id="ctaBtn">${isWatched?ICON_CHECK+' Watching':'Watch & text me deals'}</button>
         </div>
-        <div class="cta-note">🔒 No spam. Reply STOP anytime.</div>
+        <div class="cta-note">${ICON_LOCK} No spam. Reply STOP anytime.</div>
         <div class="status" id="ctaStatus"></div>
       </div>
     </div>`;
@@ -602,17 +595,17 @@ function escapeHtml(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").
 function codeChip(code){
   if(!code)return"";
   const safe=escapeHtml(code);
-  return `<span class="code-chip" data-code="${safe}" title="Tap to copy"><span class="txt">${safe}</span><span class="ico">⧉</span></span>`;
+  return `<span class="code-chip" data-code="${safe}" title="Tap to copy"><span class="txt">${safe}</span><span class="ico">${ICON_COPY}</span></span>`;
 }
 function expiryPill(iso,text){
   if(!iso)return"";
   const now=new Date();const exp=new Date(iso);
   const days=Math.ceil((exp-now)/(1000*60*60*24));
   const label=exp.toLocaleDateString(undefined,{month:"short",day:"numeric"});
-  if(days<0)return `<span class="expiry expired" title="${escapeHtml(text||"")}">⏳ Expired ${label}</span>`;
-  if(days===0)return `<span class="expiry soon" title="${escapeHtml(text||"")}">⏳ Ends today</span>`;
-  if(days<=5)return `<span class="expiry soon" title="${escapeHtml(text||"")}">⏳ Ends in ${days} day${days>1?"s":""} (${label})</span>`;
-  return `<span class="expiry ok" title="${escapeHtml(text||"")}">⏳ Until ${label}</span>`;
+  if(days<0)return `<span class="expiry expired" title="${escapeHtml(text||"")}">${ICON_CLOCK} Expired ${label}</span>`;
+  if(days===0)return `<span class="expiry soon" title="${escapeHtml(text||"")}">${ICON_CLOCK} Ends today</span>`;
+  if(days<=5)return `<span class="expiry soon" title="${escapeHtml(text||"")}">${ICON_CLOCK} Ends in ${days} day${days>1?"s":""} (${label})</span>`;
+  return `<span class="expiry ok" title="${escapeHtml(text||"")}">${ICON_CLOCK} Until ${label}</span>`;
 }
 
 // ── delegated one-tap copy for any code chip ──
@@ -622,9 +615,9 @@ document.addEventListener("click",e=>{
   const code=chip.dataset.code;
   navigator.clipboard.writeText(code).catch(()=>{});
   chip.classList.add("copied");
-  const ico=chip.querySelector(".ico");if(ico)ico.textContent="✓";
+  const ico=chip.querySelector(".ico");if(ico)ico.innerHTML=ICON_CHECK;
   toast(`Copied "${code}"`);
-  setTimeout(()=>{chip.classList.remove("copied");const i=chip.querySelector(".ico");if(i)i.textContent="⧉";},1400);
+  setTimeout(()=>{chip.classList.remove("copied");const i=chip.querySelector(".ico");if(i)i.innerHTML=ICON_COPY;},1400);
 });
 
 // ── subscribe + watch ──
@@ -645,20 +638,20 @@ async function subscribeAndWatch(){
   // 1. subscribe (if not already)
   if(!subscriberPhone&&phone){
     const r=await fetch(`${API}/api/sms/subscribe`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone})}).then(r=>r.json()).catch(e=>({error:e.message}));
-    if(r.error){setStatus("ctaStatus",`❌ ${r.error}`,"err");btn.disabled=false;btn.textContent="Watch & text me deals";return;}
+    if(r.error){setStatus("ctaStatus",`${ICON_X_SM} ${r.error}`,"err");btn.disabled=false;btn.textContent="Watch & text me deals";return;}
     subscriberPhone=r.phoneMasked;
     if(r.mode==="demo")$("demoBadge").style.display="inline-block";
   }
 
   // 2. add channel to watch list (this also scans + texts new deals)
   const w=await fetch(`${API}/api/channels`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:c.id,name:c.name,thumbnail:c.avatar})}).then(r=>r.json()).catch(e=>({error:e.message}));
-  if(w.error){setStatus("ctaStatus",`❌ ${w.error}`,"err");btn.disabled=false;btn.textContent="Watch & text me deals";return;}
+  if(w.error){setStatus("ctaStatus",`${ICON_X_SM} ${w.error}`,"err");btn.disabled=false;btn.textContent="Watch & text me deals";return;}
 
   watchedIds.add(c.id);
-  btn.innerHTML="✓ Watching";
+  btn.innerHTML=`${ICON_CHECK} Watching`;
   const dealsTexted=w.newDeals||0;
-  setStatus("ctaStatus",`✅ Watching ${c.name}. ${dealsTexted>0?`Texted you ${dealsTexted} deal${dealsTexted>1?"s":""} we found.`:"You'll get a text when a new deal drops."}`,"ok");
-  toast(`📲 Now watching ${c.name}`);
+  setStatus("ctaStatus",`${ICON_CHECK_SM} Watching ${c.name}. ${dealsTexted>0?`Texted you ${dealsTexted} deal${dealsTexted>1?"s":""} we found.`:"You'll get a text when a new deal drops."}`,"ok");
+  toast(`Now watching ${c.name}`);
   loadWatched();loadSub();loadHistory();
 }
 
@@ -673,16 +666,16 @@ async function loadWatched(){
       ${c.thumbnail?`<img class="watched-avatar" src="${c.thumbnail}" onerror="this.style.visibility='hidden'"/>`:`<div class="watched-avatar"></div>`}
       <span class="watched-name">${c.name}</span>
       <div class="watched-actions">
-        <button class="icon-btn rescan" data-id="${c.id}" data-name="${c.name.replace(/"/g,'&quot;')}" title="Check for new deals">↻</button>
-        <button class="icon-btn danger remove" data-id="${c.id}" title="Stop watching">✕</button>
+        <button class="icon-btn rescan" data-id="${c.id}" data-name="${c.name.replace(/"/g,'&quot;')}" title="Check for new deals">${ICON_REFRESH}</button>
+        <button class="icon-btn danger remove" data-id="${c.id}" title="Stop watching">${ICON_X}</button>
       </div>
     </div>`).join("");
   el.querySelectorAll(".rescan").forEach(b=>b.addEventListener("click",async()=>{
     b.disabled=true;b.innerHTML=sp();
     const r=await fetch(`${API}/api/channels/${b.dataset.id}/scan`,{method:"POST"}).then(r=>r.json()).catch(e=>({error:e.message}));
-    b.disabled=false;b.textContent="↻";
-    if(r.error)toast(`❌ ${r.error}`);
-    else {toast(r.newDeals>0?`📲 Texted you ${r.newDeals} new deal${r.newDeals>1?"s":""} from ${b.dataset.name}`:`No new deals from ${b.dataset.name} yet`);loadHistory();}
+    b.disabled=false;b.innerHTML=ICON_REFRESH;
+    if(r.error)toast(`Error: ${r.error}`);
+    else {toast(r.newDeals>0?`Texted you ${r.newDeals} new deal${r.newDeals>1?"s":""} from ${b.dataset.name}`:`No new deals from ${b.dataset.name} yet`);loadHistory();}
   }));
   el.querySelectorAll(".remove").forEach(b=>b.addEventListener("click",async()=>{
     await fetch(`${API}/api/channels/${b.dataset.id}`,{method:"DELETE"});
@@ -707,8 +700,8 @@ $("testBtn")?.addEventListener("click",async()=>{
   const b=$("testBtn");b.disabled=true;b.innerHTML=sp();
   const r=await fetch(`${API}/api/sms/test`,{method:"POST"}).then(r=>r.json()).catch(e=>({error:e.message}));
   b.disabled=false;b.textContent="Send test";
-  if(r.error)setStatus("subStatus",`❌ ${r.error}`,"err");
-  else setStatus("subStatus",r.mode==="demo"?"✅ Demo: text logged (no SMS provider connected yet).":"✅ Test text sent!","ok");
+  if(r.error)setStatus("subStatus",`${ICON_X_SM} ${r.error}`,"err");
+  else setStatus("subStatus",r.mode==="demo"?`${ICON_CHECK_SM} Demo: text logged (no SMS provider connected yet).`:`${ICON_CHECK_SM} Test text sent!`,"ok");
 });
 
 $("unsubBtn")?.addEventListener("click",async()=>{
@@ -716,11 +709,6 @@ $("unsubBtn")?.addEventListener("click",async()=>{
   await fetch(`${API}/api/sms`,{method:"DELETE"});
   subscriberPhone=null;
   loadSub();toast("Alerts turned off");
-});
-
-// delegated for dynamically added unsubBtn/testBtn
-document.addEventListener("click",e=>{
-  if(e.target.id==="testBtn"){}
 });
 
 // ── init ──
@@ -766,10 +754,10 @@ function renderHistory(){
         <span class="deal-badge">${d.label}</span>
         ${code}
         ${exp}
-        <button class="icon-btn danger hist-del" data-id="${d.id}" title="Remove">✕</button>
+        <button class="icon-btn danger hist-del" data-id="${d.id}" title="Remove">${ICON_X}</button>
       </div>
       <div class="hist-ctx">${escapeHtml(d.context||"")}${link?" · "+link:""}</div>
-      <div class="hist-ch">📺 ${escapeHtml(d.channelName)} · <a href="${d.videoUrl}" target="_blank" rel="noreferrer">${escapeHtml((d.videoTitle||"").slice(0,60))}</a> · ${fmtDate(d.detectedAt)}</div>
+      <div class="hist-ch">${ICON_TV} ${escapeHtml(d.channelName)} · <a href="${d.videoUrl}" target="_blank" rel="noreferrer">${escapeHtml((d.videoTitle||"").slice(0,60))}</a> · ${fmtDate(d.detectedAt)}</div>
     </div>`;
   }).join("");
 

@@ -1,8 +1,8 @@
-# Snag 🎯
+# Snag
 
 **Find the promo codes and deals buried in YouTube videos, without watching the full thing.**
 
-🔗 **Live demo:** [snag-2232.onrender.com](https://snag-2232.onrender.com) *(free tier, first load may take ~30s to wake up)*
+**Live demo:** [snag-2232.onrender.com](https://snag-2232.onrender.com) *(free tier, first load may take ~30s to wake up)*
 
 Creators drop discount codes in sponsor reads and video descriptions. Then the video scrolls out of your feed and the code is gone. Snag watches the channels you follow, scans every new upload's description, and pulls out the codes, sponsor links, and expiry dates. Add your phone number and it texts them to you.
 
@@ -31,6 +31,19 @@ Run the test suite with:
 bun test
 ```
 
+## Project layout
+
+```
+src/
+  server.ts        Hono app — routes, background auto-scan loop
+  scanner.ts        Channel search, RSS fetching, promo/expiry detection
+  db.ts              Tiny JSON-file store (channels, deals, subscriber, notifications)
+  notify.ts          Phone validation, SMS copy, Twilio sending
+  scanner.test.ts    Unit tests (bun:test)
+public/
+  index.html         Frontend — single static file, no build step
+```
+
 ## Configuration
 
 All optional, via environment variables:
@@ -46,8 +59,8 @@ All optional, via environment variables:
 ## Stack
 
 - [Bun](https://bun.sh) runtime with a [Hono](https://hono.dev) server
-- Vanilla HTML/CSS/JS frontend in `public/`
-- JSON file storage (`ytscan.json`, created at runtime and gitignored)
+- Vanilla HTML/CSS/JS frontend in `public/` — no build step, no framework
+- JSON file storage (`snag.json`, created at runtime and gitignored)
 - YouTube channel RSS feeds for video data, YouTube search scraping for channel lookup
 
 ## Deploying your own

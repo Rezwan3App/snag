@@ -36,9 +36,8 @@ app.get("/api/search", async (c) => {
 
 // ── API: Preview a channel's last 5 videos + detected deals ──────────────────
 app.get("/api/channel/:id/preview", async (c) => {
-  const name = c.req.query("name") ?? "";
   try {
-    const videos = await previewChannel(c.req.param("id"), name, 5);
+    const videos = await previewChannel(c.req.param("id"), 5);
     return c.json({ videos });
   } catch (e: any) {
     return c.json({ error: e.message }, 500);
