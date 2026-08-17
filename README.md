@@ -35,13 +35,13 @@ bun test
 
 ```
 src/
-  server.ts        Hono app — routes, background auto-scan loop
+  server.ts        Hono app, routes, background auto-scan loop
   scanner.ts        Channel search, RSS fetching, promo/expiry detection
   db.ts              Tiny JSON-file store (channels, deals, subscriber, notifications)
   notify.ts          Phone validation, SMS copy, Twilio sending
   scanner.test.ts    Unit tests (bun:test)
 public/
-  index.html         Frontend — single static file, no build step
+  index.html         Frontend, single static file, no build step
 ```
 
 ## Configuration
@@ -59,7 +59,7 @@ All optional, via environment variables:
 ## Stack
 
 - [Bun](https://bun.sh) runtime with a [Hono](https://hono.dev) server
-- Vanilla HTML/CSS/JS frontend in `public/` — no build step, no framework
+- Vanilla HTML/CSS/JS frontend in `public/`, no build step, no framework
 - JSON file storage (`snag.json`, created at runtime and gitignored)
 - YouTube channel RSS feeds for video data, YouTube search scraping for channel lookup
 
