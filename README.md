@@ -6,6 +6,8 @@
 
 Creators drop discount codes in sponsor reads and video descriptions. Then the video scrolls out of your feed and the code is gone. Snag watches the channels you follow, scans every new upload's description, and pulls out the codes, sponsor links, and expiry dates. Add your phone number and it texts them to you.
 
+![Snag homepage](docs/screenshot.png)
+
 ## How it works
 
 1. Search for a YouTuber and add their channel to your watchlist.
