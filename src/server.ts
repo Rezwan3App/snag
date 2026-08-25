@@ -44,6 +44,92 @@ app.get("/api/channel/:id/preview", async (c) => {
   }
 });
 
+// ── API: Homepage "spotlight" strip ───────────────────────────────────────────
+// A fixed set of well-known channels (the same names already in the search
+// chips), scanned read-only — no DB writes, no SMS — so a first-time visitor
+// sees Snag actually finding real deals instead of an empty search box.
+// Cached briefly so a burst of visitors doesn't hammer YouTube's RSS feed.
+const SPOTLIGHT_CHANNELS = [
+  { id: "UCXuqSBlHAE6Xw-yeJA0Tunw", name: "Linus Tech Tips" },
+  { id: "UCBJycsmduvYEL83R_U4JriQ", name: "MKBHD" },
+  { id: "UCX6OQ3DkcsbYNE6H8uQQuVA", name: "MrBeast" },
+  { id: "UCY1kMZp36IQSyNx_9h4mpCg", name: "Mark Rober" },
+  { id: "UC4ijq8Cg-8zQKx8OH12dUSw", name: "Kara and Nate" },
+  { id: "UCoOae5nYA7VqaXzerajD0lg", name: "Ali Abdaal" },
+  { id: "UCtinbF-Q-fVthA0qrFQTgXQ", name: "Casey Neistat" },
+  { id: "UCsTcErHg8oDvUnTzoqsYeNw", name: "Unbox Therapy" },
+  { id: "UCRijo3ddMTht_IHyNSNXpNQ", name: "Dude Perfect" },
+];
+
+interface SpotlightDeal {
+  channelName: string;
+  channelId: string;
+  videoTitle: string;
+  videoUrl: string;
+  label: string;
+  code: string | null;
+  url: string | null;
+  publishedAt: string;
+}
+
+let spotlightCache: { deals: SpotlightDeal[]; expiresAt: number } | null = null;
+const SPOTLIGHT_TTL_MS = 10 * 60_000;
+
+async function getSpotlightDeals(): Promise<SpotlightDeal[]> {
+  if (spotlightCache && spotlightCache.expiresAt > Date.now()) return spotlightCache.deals;
+
+  const perChannel = await Promise.all(
+    SPOTLIGHT_CHANNELS.map(async (ch) => {
+      try {
+        const videos = await previewChannel(ch.id, 5);
+        return videos.flatMap((v) =>
+          v.deals.map((d) => ({
+            channelName: ch.name,
+            channelId: ch.id,
+            videoTitle: v.title,
+            videoUrl: v.url,
+            label: d.label,
+            code: d.code,
+            url: d.url,
+            publishedAt: v.publishedAt,
+          })),
+        );
+      } catch {
+        return [];
+      }
+    }),
+  );
+
+  // Same evergreen sponsor block repeats across a channel's last few videos
+  // (e.g. LTT's "Channel Partners" list) — dedupe by (channel, link) and cap
+  // per channel so the strip shows variety across creators, not one channel's
+  // sponsor list three times over.
+  const sorted = perChannel.flat().sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  const seenLinks = new Set<string>();
+  const perChannelCount = new Map<string, number>();
+  const deals: SpotlightDeal[] = [];
+  for (const d of sorted) {
+    const dedupeKey = `${d.channelId}|${d.url}`;
+    if (seenLinks.has(dedupeKey)) continue;
+    if ((perChannelCount.get(d.channelId) ?? 0) >= 2) continue;
+    seenLinks.add(dedupeKey);
+    perChannelCount.set(d.channelId, (perChannelCount.get(d.channelId) ?? 0) + 1);
+    deals.push(d);
+    if (deals.length >= 12) break;
+  }
+
+  spotlightCache = { deals, expiresAt: Date.now() + SPOTLIGHT_TTL_MS };
+  return deals;
+}
+
+app.get("/api/spotlight", async (c) => {
+  try {
+    return c.json({ deals: await getSpotlightDeals() });
+  } catch (e: any) {
+    return c.json({ deals: [], error: e.message }, 500);
+  }
+});
+
 // ── API: Deals ───────────────────────────────────────────────────────────────
 app.get("/api/deals", (c) => c.json(db.getDeals()));
 
@@ -73,10 +159,15 @@ app.post("/api/channels", async (c) => {
     thumbnail: thumbnail ?? null,
   });
 
-  // Scan + text deals in the background.
-  scanChannelAndSave(id, chName, 5).catch(console.error);
+  // Scan + text deals now, so the response can report how many were found
+  // (the frontend reads `newDeals` to show "texted you N deals" vs. "you'll
+  // get a text later" — silently wrong without this).
+  const { newDeals } = await scanChannelAndSave(id, chName, 5).catch((e) => {
+    console.error(e);
+    return { videos: [], newDeals: 0 };
+  });
 
-  return c.json({ ok: true, channel });
+  return c.json({ ok: true, channel, newDeals });
 });
 
 app.delete("/api/channels/:id", (c) => {

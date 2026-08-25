@@ -78,20 +78,27 @@ export async function searchChannels(query: string): Promise<ChannelSearchResult
 // ── Promo detection (from video descriptions via RSS) ────────────────────────
 
 const PROMO_RULES: { pattern: RegExp; label: string }[] = [
-  { pattern: /use\s+(?:code|coupon|promo\s*code)\s+["']?([A-Z0-9][A-Z0-9_\-]{2,19})["']?/i, label: "Promo code" },
-  { pattern: /(?:discount|promo|coupon)\s+code[:\s]+["']?([A-Z0-9][A-Z0-9_\-]{2,19})["']?/i, label: "Discount code" },
-  { pattern: /code\s+["']?([A-Z0-9][A-Z0-9_\-]{2,19})["']?\s+(?:for|to\s+(?:get|save))/i, label: "Promo code" },
-  { pattern: /(?:get|save)\s+(?:up\s+to\s+)?(\d+%|\$\d+)\s+off/i, label: "Discount" },
-  { pattern: /(\d+%)\s+(?:off|discount)/i, label: "Discount" },
-  { pattern: /free\s+trial\b/i, label: "Free trial" },
-  { pattern: /\d+\s*(?:month|day|week)s?\s+free\b/i, label: "Free trial" },
-  { pattern: /giveaway\b/i, label: "Giveaway" },
-  { pattern: /limited\s+time\s+(?:offer|deal)\b/i, label: "Limited offer" },
-  { pattern: /exclusive\s+(?:deal|discount|offer)\b/i, label: "Exclusive deal" },
+  { pattern: /use\s+(?:code|coupon|promo\s*code)\s+["']?([A-Z0-9][A-Z0-9_\-]{2,19})["']?/gi, label: "Promo code" },
+  { pattern: /(?:discount|promo|coupon)\s+code[:\s]+["']?([A-Z0-9][A-Z0-9_\-]{2,19})["']?/gi, label: "Discount code" },
+  { pattern: /code\s+["']?([A-Z0-9][A-Z0-9_\-]{2,19})["']?\s+(?:for|to\s+(?:get|save))/gi, label: "Promo code" },
+  { pattern: /(?:get|save)\s+(?:up\s+to\s+)?(\d+%|\$\d+)\s+off/gi, label: "Discount" },
+  { pattern: /(\d+%)\s+(?:off|discount)/gi, label: "Discount" },
+  { pattern: /free\s+trial\b/gi, label: "Free trial" },
+  { pattern: /\d+\s*(?:month|day|week)s?\s+free\b/gi, label: "Free trial" },
+  { pattern: /giveaway\b/gi, label: "Giveaway" },
+  { pattern: /limited\s+time\s+(?:offer|deal)\b/gi, label: "Limited offer" },
+  { pattern: /exclusive\s+(?:deal|discount|offer)\b/gi, label: "Exclusive deal" },
+  // Plain sponsor mentions carry no code/discount language at all — the most
+  // common real-world sponsor read ("thanks to X for sponsoring, check them
+  // out at [link]"). Only counts as a deal if a nearby link resolves (below).
+  {
+    pattern: /\b(?:thanks?\s+(?:to\s+)?[A-Za-z][\w.&' -]{0,40}?\s+for\s+sponsoring|sponsored\s+by|in\s+partnership\s+with|paid\s+partnership(?:\s+with)?|brought\s+to\s+you\s+by)\b/gi,
+    label: "Sponsor",
+  },
 ];
 
 // Sponsor/affiliate URLs that usually carry the deal (e.g. ridge.com/MKBHD)
-const DEAL_URL_RE = /https?:\/\/(?:www\.)?((?:[a-z0-9-]+\.)+[a-z]{2,})(\/[A-Za-z0-9_\-]+)?/gi;
+const DEAL_URL_RE = /https?:\/\/(?:www\.)?((?:[a-z0-9-]+\.)+[a-z]{2,})((?:\/[A-Za-z0-9_\-]+)+)?/gi;
 const GENERIC_DOMAINS = new Set([
   "youtube.com", "youtu.be", "twitter.com", "x.com", "instagram.com", "facebook.com",
   "tiktok.com", "discord.gg", "discord.com", "patreon.com", "twitch.tv", "goo.gl",
@@ -129,6 +136,46 @@ function findDealUrl(description: string, nearIndex?: number): string | null {
     }
   }
   return bestDist <= 300 ? best[0] : null;
+}
+
+// Many channels list their ongoing affiliate deals under a "Channel
+// Partners"/"Our Sponsors" header as one "Name - blurb: link" line each, with
+// no per-line "sponsor" keyword to match on — so PROMO_RULES misses them
+// entirely. Parse that block directly instead.
+const PARTNER_HEADER_RE = /(?:channel\s+partners|our\s+sponsors)\s*:?\s*\n/i;
+const PARTNER_LINE_RE = /^\s*([A-Za-z][\w&'".\- ]{0,30}?)\s*[-–:]\s*.*?(https?:\/\/\S+?)[).,]*\s*$/;
+
+function findPartnerListDeals(description: string): DetectedDeal[] {
+  const header = description.match(PARTNER_HEADER_RE);
+  if (!header) return [];
+
+  const start = (header.index ?? 0) + header[0].length;
+  const end = description.indexOf("\n\n", start);
+  const block = description.slice(start, end === -1 ? description.length : end);
+
+  const deals: DetectedDeal[] = [];
+  for (const line of block.split("\n")) {
+    const m = line.match(PARTNER_LINE_RE);
+    if (!m) continue;
+    const baseDomain = m[2]
+      .replace(/^https?:\/\/(?:www\.)?/i, "")
+      .split(/[\/?#]/)[0]
+      .split(".")
+      .slice(-2)
+      .join(".")
+      .toLowerCase();
+    if (GENERIC_DOMAINS.has(baseDomain)) continue;
+
+    deals.push({
+      label: "Sponsor",
+      code: null,
+      context: line.trim().replace(/\s+/g, " ").slice(0, 200),
+      url: m[2],
+      expiresAt: null,
+      expiryText: null,
+    });
+  }
+  return deals;
 }
 
 const MONTHS: Record<string, number> = {
@@ -189,32 +236,36 @@ function parseExpiry(description: string): { iso: string; text: string } | null 
 
 export function detectDeals(description: string): DetectedDeal[] {
   if (!description) return [];
-  const found: DetectedDeal[] = [];
+  const found: DetectedDeal[] = [...findPartnerListDeals(description)];
   const expiry = parseExpiry(description);
 
   for (const rule of PROMO_RULES) {
-    const match = description.match(rule.pattern);
-    if (!match) continue;
+    for (const match of description.matchAll(rule.pattern)) {
+      const idx = match.index ?? 0;
+      const url = findDealUrl(description, idx);
 
-    const code = match[1] && /[A-Z]/i.test(match[1]) && !match[1].includes("%") && !match[1].includes("$")
-      ? match[1].toUpperCase()
-      : null;
+      // A bare sponsor mention with no findable link isn't actionable.
+      if (rule.label === "Sponsor" && !url) continue;
 
-    // context: the sentence/line containing the match
-    const idx = match.index ?? 0;
-    const start = Math.max(0, description.lastIndexOf("\n", idx));
-    let end = description.indexOf("\n", idx);
-    if (end === -1) end = Math.min(description.length, idx + 160);
-    const context = description.slice(start, end).trim().replace(/\s+/g, " ").slice(0, 200);
+      const code = match[1] && /[A-Z]/i.test(match[1]) && !match[1].includes("%") && !match[1].includes("$")
+        ? match[1].toUpperCase()
+        : null;
 
-    found.push({
-      label: rule.label,
-      code,
-      context,
-      url: findDealUrl(description, idx),
-      expiresAt: expiry?.iso ?? null,
-      expiryText: expiry?.text ?? null,
-    });
+      // context: the sentence/line containing the match
+      const start = Math.max(0, description.lastIndexOf("\n", idx));
+      let end = description.indexOf("\n", idx);
+      if (end === -1) end = Math.min(description.length, idx + 160);
+      const context = description.slice(start, end).trim().replace(/\s+/g, " ").slice(0, 200);
+
+      found.push({
+        label: rule.label,
+        code,
+        context,
+        url,
+        expiresAt: expiry?.iso ?? null,
+        expiryText: expiry?.text ?? null,
+      });
+    }
   }
 
   // Dedupe: several rules often match the same sponsor sentence. Keep one deal
@@ -248,19 +299,28 @@ function decodeEntities(s: string): string {
     .replace(/&#39;/g, "'");
 }
 
-async function fetchRssXml(channelId: string): Promise<string> {
+export async function fetchRssXml(
+  channelId: string,
+  opts: { attempts?: number; baseDelayMs?: number } = {},
+): Promise<string> {
+  const attempts = opts.attempts ?? 6;
+  const baseDelayMs = opts.baseDelayMs ?? 350;
   const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
   let xml = "";
   let lastStatus = 0;
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
     const res = await fetch(rssUrl, { headers: { "User-Agent": "Mozilla/5.0" } });
     lastStatus = res.status;
     if (res.ok) {
       xml = await res.text();
       break;
     }
-    // YouTube's RSS endpoint intermittently 404s/429s on valid channels — back off and retry.
-    await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+    // YouTube's RSS endpoint intermittently 404s/429s on valid channels — back
+    // off (with jitter, so concurrent scans don't retry in lockstep) and retry.
+    if (attempt < attempts - 1) {
+      const delay = baseDelayMs * (attempt + 1) + Math.random() * baseDelayMs;
+      await new Promise((r) => setTimeout(r, delay));
+    }
   }
   if (!xml) throw new Error(`Could not load this channel's videos (${lastStatus}).`);
   return xml;
@@ -336,7 +396,7 @@ export async function scanChannelAndSave(
     db.markVideoScanned(v.id);
 
     for (const d of v.deals) {
-      if (db.dealExists(v.id, d.code, d.label)) continue;
+      if (db.dealExists(v.id, d.label, d.context)) continue;
       const saved = db.addDeal({
         videoId: v.id,
         videoTitle: v.title,

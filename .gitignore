@@ -3,5 +3,7 @@ node_modules/
 *.log
 dist/
 .bun/
-snag.json
+snag.db
+snag.db-shm
+snag.db-wal
 bun.lock

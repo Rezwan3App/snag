@@ -39,7 +39,7 @@ bun test
 src/
   server.ts        Hono app, routes, background auto-scan loop
   scanner.ts        Channel search, RSS fetching, promo/expiry detection
-  db.ts              Tiny JSON-file store (channels, deals, subscriber, notifications)
+  db.ts              Tiny SQLite store (channels, deals, subscriber, notifications)
   notify.ts          Phone validation, SMS copy, Twilio sending
   scanner.test.ts    Unit tests (bun:test)
 public/
@@ -54,6 +54,7 @@ All optional, via environment variables:
 |---|---|---|
 | `PORT` | Server port | `4242` |
 | `SCAN_INTERVAL_MINUTES` | How often watched channels are re-scanned | `30` |
+| `SNAG_DB_PATH` | Path to the SQLite database file | `./snag.db` |
 | `TWILIO_ACCOUNT_SID` | Twilio credentials for real SMS | demo mode |
 | `TWILIO_AUTH_TOKEN` | Twilio auth token | demo mode |
 | `TWILIO_FROM_NUMBER` | Sending phone number | demo mode |
@@ -62,7 +63,7 @@ All optional, via environment variables:
 
 - [Bun](https://bun.sh) runtime with a [Hono](https://hono.dev) server
 - Vanilla HTML/CSS/JS frontend in `public/`, no build step, no framework
-- JSON file storage (`snag.json`, created at runtime and gitignored)
+- SQLite storage via Bun's built-in `bun:sqlite` (`snag.db`, created at runtime and gitignored), no external database, no ORM
 - YouTube channel RSS feeds for video data, YouTube search scraping for channel lookup
 
 ## Deploying your own
@@ -75,4 +76,4 @@ A [render.yaml](render.yaml) blueprint is included. On Render:
 2. Click **New → Blueprint**, pick this repo, and deploy.
 3. (Optional) Add the three Twilio environment variables to send real texts.
 
-Free-tier notes: the service sleeps after 15 minutes of inactivity (background scans pause while asleep), and the JSON data file resets on restarts since free instances have no persistent disk. Fine for a demo; for always-on alerts use a paid instance or swap in a hosted database.
+Free-tier notes: the service sleeps after 15 minutes of inactivity (background scans pause while asleep), and the SQLite file resets on restarts since free instances have no persistent disk. That's true of any local file, not specific to SQLite. Fine for a demo; for data that needs to survive restarts, add a Render persistent disk (paid) or point `SNAG_DB_PATH` at one, or swap in a hosted database.

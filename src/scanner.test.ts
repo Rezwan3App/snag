@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { detectDeals } from "./scanner";
+import { detectDeals, fetchRssXml } from "./scanner";
 import { normalizePhone, maskPhone, buildDealSms } from "./notify";
 
 describe("detectDeals", () => {
@@ -53,6 +53,111 @@ describe("detectDeals", () => {
 
   test("handles empty input", () => {
     expect(detectDeals("")).toEqual([]);
+  });
+
+  test("catches multiple distinct promo codes in one description", () => {
+    const desc = [
+      "Use code FIRST for 10% off at https://brand-one.com/deal",
+      "Also use code SECOND for 20% off at https://brand-two.com/deal",
+    ].join("\n");
+    const deals = detectDeals(desc);
+    const codes = deals.map((d) => d.code).sort();
+    expect(codes).toEqual(["FIRST", "SECOND"]);
+  });
+
+  test("detects a plain sponsor mention with no code, paired with its link", () => {
+    const desc =
+      "Thanks to Meter for sponsoring this video! Go to https://meter.com/ltt to book a demo now!";
+    const deals = detectDeals(desc);
+    expect(deals.length).toBe(1);
+    expect(deals[0].label).toBe("Sponsor");
+    expect(deals[0].code).toBeNull();
+    expect(deals[0].url).toBe("https://meter.com/ltt");
+  });
+
+  test("detects 'sponsored by' and 'brought to you by' sponsor phrasing", () => {
+    const a = detectDeals("Sponsored by ThreatLocker: https://www.threatlocker.com/ltt");
+    expect(a[0].label).toBe("Sponsor");
+    expect(a[0].url).toBe("https://www.threatlocker.com/ltt");
+
+    const b = detectDeals("This video is brought to you by dbrand: https://dbrand.com/shop/pixel11");
+    expect(b[0].label).toBe("Sponsor");
+    expect(b[0].url).toBe("https://dbrand.com/shop/pixel11");
+  });
+
+  test("ignores a bare sponsor mention with no resolvable link", () => {
+    const deals = detectDeals("Huge thanks to our sponsor for making this video possible.");
+    expect(deals).toEqual([]);
+  });
+
+  test("does not double-count a sponsor mention that also has an explicit code", () => {
+    const desc = "Sponsored by Squarespace — use code WAN for 10% off at https://squarespace.com/WAN";
+    const deals = detectDeals(desc);
+    expect(deals.length).toBe(1);
+    expect(deals[0].code).toBe("WAN");
+  });
+
+  test("real LTT description: a 'Channel Partners' link list with no per-line sponsor keyword", () => {
+    // The per-video sponsor mention here ("using our link", no "sponsor"
+    // keyword) is a harder case we don't chase — but every LTT video also
+    // carries this evergreen partners block, which is worth surfacing.
+    const desc = [
+      "Secure your business with ThreatLocker today using our link: https://www.threatlocker.com/ltt",
+      "",
+      "The AM4 platform refuses to die, spanning four generations of Zen processors.",
+      "",
+      "Check out our Channel Partners:",
+      "Secretlab - Grab a TITAN Evo ergonomic gaming chair:  https://lmg.gg/secretlabltt",
+      "PIA - Get the VPN of our choice: https://www.piavpn.com/ltt",
+      'dbrand - Buy a "Circuit" series skin for your device: https://dbrand.com/pcb',
+      "",
+      "SHOP LTT PRODUCTS: https://lttstore.com",
+    ].join("\n");
+    const deals = detectDeals(desc);
+    const partners = deals.filter((d) => d.context.startsWith("Secretlab") || d.context.startsWith("PIA") || d.context.startsWith("dbrand"));
+    expect(partners.length).toBe(3);
+    expect(partners.find((d) => d.context.startsWith("dbrand"))?.url).toBe("https://dbrand.com/pcb");
+  });
+
+  test("real MKBHD description: 'thanks X for sponsoring' with a discover link", () => {
+    const desc =
+      "Thanks Best Buy for sponsoring this video. You can find the tech upgrades you need to elevate your daily life at https://www.bestbuy.com/discover";
+    const deals = detectDeals(desc);
+    expect(deals.length).toBeGreaterThan(0);
+    expect(deals[0].url).toBe("https://www.bestbuy.com/discover");
+  });
+});
+
+describe("fetchRssXml retry", () => {
+  test("retries through intermittent failures and eventually succeeds", async () => {
+    const realFetch = globalThis.fetch;
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls++;
+      return calls < 3 ? new Response("", { status: 404 }) : new Response("<feed></feed>", { status: 200 });
+    }) as typeof fetch;
+    try {
+      const xml = await fetchRssXml("UCtest", { attempts: 6, baseDelayMs: 5 });
+      expect(xml).toBe("<feed></feed>");
+      expect(calls).toBe(3);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+
+  test("throws a descriptive error after exhausting all attempts", async () => {
+    const realFetch = globalThis.fetch;
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls++;
+      return new Response("", { status: 404 });
+    }) as typeof fetch;
+    try {
+      await expect(fetchRssXml("UCtest", { attempts: 3, baseDelayMs: 5 })).rejects.toThrow(/Could not load/);
+      expect(calls).toBe(3);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
   });
 });
 

@@ -140,6 +140,42 @@
   .sec-title{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 4px}
   .sec-lead{font-size:15px;color:var(--ink2);margin-bottom:26px}
 
+  /* SPOTLIGHT — a live ticker of deals Snag already found, so a first-time
+     visitor sees proof before typing anything */
+  .spotlight{max-width:840px;margin:0 auto;padding:0 24px 8px}
+  .spotlight .sec-lead{margin-bottom:18px}
+  .ticker{
+    overflow:hidden;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent);
+  }
+  .ticker-track{
+    display:flex;gap:12px;width:max-content;
+    animation:ticker-scroll var(--ticker-duration,32s) linear infinite;
+  }
+  .ticker:hover .ticker-track,.ticker:focus-within .ticker-track{animation-play-state:paused}
+  @keyframes ticker-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  .catch-card{
+    flex:0 0 auto;display:flex;align-items:center;gap:10px;
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);
+    padding:10px 16px;white-space:nowrap;
+  }
+  .catch-chan{font-weight:700;font-size:13.5px;color:var(--ink)}
+  .catch-title{color:var(--muted2);font-size:12.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+  .catch-card .deal-badge{flex-shrink:0}
+  .catch-card .deal-badge.nocode{color:var(--warn);border-color:#ddc48c}
+  .catch-link{color:var(--accent-dark);font-weight:700;font-size:12.5px;text-decoration:none}
+  .catch-link:hover{text-decoration:underline}
+
+  .catch-card.skeleton{width:200px;height:19px;background:var(--line);border-color:var(--line);animation:skeleton-pulse 1.4s ease-in-out infinite}
+  @keyframes skeleton-pulse{0%,100%{opacity:.45}50%{opacity:.9}}
+
+  @media (prefers-reduced-motion: reduce){
+    .ticker{overflow-x:auto;-webkit-mask-image:none;mask-image:none}
+    .ticker-track{animation:none!important}
+  }
+
   /* PREVIEW PANEL */
   .preview{margin:8px 0 52px;display:none}
   .preview.show{display:block;animation:reveal .28s var(--ease)}
@@ -379,6 +415,19 @@
   <div class="results-pop" id="resultsPop"></div>
 </section>
 
+<section class="spotlight" id="spotlight">
+  <h2 class="sec-title">Live catches</h2>
+  <p class="sec-lead">Real codes and sponsor links Snag just pulled from these channels' newest videos.</p>
+  <div class="ticker">
+    <div class="ticker-track" id="tickerTrack">
+      <div class="catch-card skeleton"></div>
+      <div class="catch-card skeleton"></div>
+      <div class="catch-card skeleton"></div>
+      <div class="catch-card skeleton"></div>
+    </div>
+  </div>
+</section>
+
 <div class="wrap">
   <!-- PREVIEW PANEL -->
   <div class="preview" id="preview"></div>
@@ -608,6 +657,40 @@ function expiryPill(iso,text){
   return `<span class="expiry ok" title="${escapeHtml(text||"")}">${ICON_CLOCK} Until ${label}</span>`;
 }
 
+// ── homepage spotlight strip: proof Snag works, before anyone searches ──
+function catchLink(url){
+  if(!url)return"";
+  try{
+    const host=new URL(url).hostname.replace(/^www\./,"");
+    return `<a class="catch-link" href="${url}" target="_blank" rel="noreferrer">${host}</a>`;
+  }catch{return"";}
+}
+
+async function loadSpotlight(){
+  const section=$("spotlight");
+  try{
+    const r=await fetch(`${API}/api/spotlight`).then(r=>r.json());
+    const deals=r.deals||[];
+    if(!deals.length){section.hidden=true;return;}
+
+    const cards=deals.map(d=>`
+      <div class="catch-card">
+        <span class="catch-chan">${escapeHtml(d.channelName)}</span>
+        <span class="catch-title">${escapeHtml(d.videoTitle)}</span>
+        <span class="deal-badge${d.code?"":" nocode"}">${d.label}</span>
+        ${d.code?codeChip(d.code):catchLink(d.url)}
+      </div>`).join("");
+
+    // Duplicate once for a seamless loop; a static single copy for reduced motion.
+    const reduceMotion=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const track=$("tickerTrack");
+    track.innerHTML=reduceMotion?cards:cards+cards;
+    track.style.setProperty("--ticker-duration",`${Math.max(18,deals.length*4)}s`);
+  }catch(e){
+    section.hidden=true;
+  }
+}
+
 // ── delegated one-tap copy for any code chip ──
 document.addEventListener("click",e=>{
   const chip=e.target.closest&&e.target.closest(".code-chip");
@@ -712,6 +795,7 @@ $("unsubBtn")?.addEventListener("click",async()=>{
 });
 
 // ── init ──
+loadSpotlight();
 loadWatched();
 loadSub();
 loadHistory();
