@@ -195,7 +195,8 @@
   }
   .preview-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--panel);box-shadow:var(--shadow)}
   .preview-meta{flex:1;min-width:0}
-  .preview-name{font-family:"Zilla Slab",serif;font-size:21px;font-weight:600;letter-spacing:-.2px}
+  .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  .preview-name{margin:0;font-family:"Zilla Slab",serif;font-size:21px;font-weight:600;letter-spacing:-.2px}
   .preview-stat{font-size:14px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px}
   .preview-count{
     background:var(--accent-soft);color:var(--accent-dark);border-radius:var(--r-sm);
@@ -328,8 +329,8 @@
     padding:24px;margin-bottom:24px;
   }
   .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-  .panel-head h3{font-size:16px;font-weight:800;letter-spacing:-.2px;display:flex;align-items:center;gap:9px;color:var(--ink)}
-  .panel-head h3 svg{color:var(--accent-dark);flex-shrink:0}
+  .panel-head h2{font-size:16px;font-weight:800;letter-spacing:-.2px;display:flex;align-items:center;gap:9px;color:var(--ink)}
+  .panel-head h2 svg{color:var(--accent-dark);flex-shrink:0}
   .watched-list{display:flex;flex-direction:column;gap:10px}
   .watched-item{
     display:flex;align-items:center;gap:13px;padding:12px 14px;
@@ -389,7 +390,8 @@
   .hist-group-time{font-size:11px;color:var(--muted2);font-weight:600;flex-shrink:0;white-space:nowrap}
   .hist-deals{display:flex;flex-direction:column;gap:8px}
   .hist-deal-row{display:flex;align-items:flex-start;gap:10px}
-  .hist-deal-row.is-expired{opacity:.55}
+  .hist-deal-row.is-expired .hist-deal-text{color:var(--muted)}
+  .hist-deal-row.is-expired .hist-deal-text,.hist-deal-row.is-expired .code-chip .txt{text-decoration:line-through}
   .hist-deal-text{flex:1;font-size:13px;color:var(--ink2);line-height:1.45;min-width:0}
   .hist-del{flex-shrink:0}
 
@@ -430,7 +432,7 @@
 </head>
 <body>
 
-<nav>
+<nav aria-label="Main">
   <a class="brand" href="/">
     <span class="brand-name">Snag</span>
   </a>
@@ -438,6 +440,8 @@
   <a class="nav-link" href="#how">How it works</a>
   <a class="nav-link" href="#watched">My alerts</a>
 </nav>
+
+<main>
 
 <section class="hero">
   <h1 class="hero-title">Skip the video. Keep the deal.</h1>
@@ -463,12 +467,13 @@
   </div>
 
   <div class="results-pop" id="resultsPop"></div>
+  <div class="sr-only" id="liveMsg" role="status" aria-live="polite"></div>
 </section>
 
 <section class="spotlight" id="spotlight">
   <h2 class="sec-title">Live catches</h2>
   <p class="sec-lead">Real codes and sponsor links Snag just pulled from these channels' newest videos.</p>
-  <div class="ticker">
+  <div class="ticker" id="ticker" aria-busy="true">
     <div class="ticker-track" id="tickerTrack">
       <div class="catch-card skeleton"></div>
       <div class="catch-card skeleton"></div>
@@ -508,17 +513,17 @@
   <!-- WATCHED CHANNELS -->
   <div id="watched">
     <div class="panel">
-      <div class="panel-head"><h3><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 10a5 5 0 0 1 8 0"/><path d="M2 7a9 9 0 0 1 12 0"/><circle cx="8" cy="13" r="1.3" fill="currentColor" stroke="none"/></svg> Channels you're watching</h3></div>
+      <div class="panel-head"><h2><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 10a5 5 0 0 1 8 0"/><path d="M2 7a9 9 0 0 1 12 0"/><circle cx="8" cy="13" r="1.3" fill="currentColor" stroke="none"/></svg> Channels you're watching</h2></div>
       <div class="watched-list" id="watchedList"><div class="empty-mini">Search a creator above and tap "Watch & text me deals" to start.</div></div>
     </div>
 
     <div class="panel" id="subPanel" style="display:none">
-      <div class="panel-head"><h3><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5h12v7H6.5L3 13.5v-3H2z"/></svg> Text alerts</h3><span class="demo-badge" id="demoBadge" style="display:none">Demo mode</span></div>
+      <div class="panel-head"><h2><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5h12v7H6.5L3 13.5v-3H2z"/></svg> Text alerts</h2><span class="demo-badge" id="demoBadge" style="display:none">Demo mode</span></div>
       <div class="sub-status">
         <span class="sub-dot"></span>
         <div class="sub-info">Alerts on for <b id="subPhone"></b></div>
         <button class="btn btn-ghost" id="testBtn" style="padding:9px 16px;font-size:14px">Send test</button>
-        <button class="icon-btn danger" id="unsubBtn" title="Turn off" aria-label="Turn off" aria-label="Turn off"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+        <button class="icon-btn danger" id="unsubBtn" title="Turn off" aria-label="Turn off text alerts"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
       </div>
       <div class="status" id="subStatus" role="status" aria-live="polite"></div>
     </div>
@@ -528,12 +533,12 @@
   <div id="history">
     <div class="panel">
       <div class="panel-head">
-        <h3><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l3 1.8"/></svg> Deal history</h3>
+        <h2><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l3 1.8"/></svg> Deal history</h2>
         <div class="hist-tools">
           <div class="hist-filter" id="histFilter">
-            <button class="hist-tab active" data-f="all">All</button>
-            <button class="hist-tab" data-f="active">Active</button>
-            <button class="hist-tab" data-f="expiring">Expiring</button>
+            <button class="hist-tab active" data-f="all" aria-pressed="true">All</button>
+            <button class="hist-tab" data-f="active" aria-pressed="false">Active</button>
+            <button class="hist-tab" data-f="expiring" aria-pressed="false">Expiring</button>
           </div>
           <button class="btn btn-ghost" id="clearHistBtn" style="padding:7px 12px;font-size:13px">Clear all</button>
         </div>
@@ -542,6 +547,7 @@
     </div>
   </div>
 </div>
+</main>
 
 <footer>
   Snag · reads public YouTube data · scans video descriptions for deals
@@ -588,47 +594,54 @@ function toast(msg,ms=2800){const e=$("toast");e.textContent=msg;e.classList.add
 const sp=()=>`<span class="spin"></span>`;
 const safeUrl=u=>/^https?:\/\//i.test(u||"")?u:"#";
 function setStatus(id,html,state){const e=$(id);e.className=`status show ${state}`;e.innerHTML=html}
+function say(m){const e=$("liveMsg");if(e){e.textContent="";setTimeout(()=>{e.textContent=m},50)}}
+function focusPreview(){const h=document.querySelector("#preview .preview-name");if(h){h.tabIndex=-1;h.focus({preventScroll:true})}}
 function clearStatus(id){$(id).className="status"}
 
 // ── search ──
 let searchSeq=0,previewSeq=0;
 async function doSearch(q){
   if(!q)return;
+  if(q.length<2){say("Type at least 2 letters");return;}
   const my=++searchSeq;
   if(q.length<2){const p=$("resultsPop");p.classList.add("show");p.innerHTML=`<div class="res-head">Type at least 2 letters.</div>`;return;}
   const btn=$("searchBtn");btn.disabled=true;btn.innerHTML=sp();
   const pop=$("resultsPop");
   pop.classList.add("show");
-  pop.innerHTML=`<div class="res-head">Searching…</div>`;
+  pop.innerHTML=`<div class="res-head">Searching…</div>`;say("Searching");
   try{
     const r=await api(`/api/search?q=${encodeURIComponent(q)}`);
     if(my!==searchSeq)return;
     const results=r.results||[];
-    if(!results.length){pop.innerHTML=`<div class="res-head">No channels found for "${escapeHtml(q)}"</div>`;}
+    if(!results.length){pop.innerHTML=`<div class="res-head">No channels found for "${escapeHtml(q)}"</div>`;say("No channels found");}
     else{
       pop.innerHTML=`<div class="res-head">${results.length} channel${results.length>1?"s":""} found, pick one</div>`+
         results.map(c=>`
           <button class="res-item" data-id="${escapeHtml(c.id)}" data-name="${escapeHtml(c.name)}" data-avatar="${escapeHtml(c.thumbnail)}">
-            <img class="res-avatar" src="${escapeHtml(c.thumbnail)}" loading="lazy" onerror="this.style.visibility='hidden'"/>
+            <img class="res-avatar" src="${escapeHtml(c.thumbnail)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'"/>
             <div class="res-info">
               <div class="res-name">${escapeHtml(c.name)}</div>
               <div class="res-sub">${escapeHtml(c.subscribers)}</div>
             </div>
             <span class="res-go">View deals ${ICON_CHEVRON}</span>
           </button>`).join("");
+      say(`${results.length} channel${results.length>1?"s":""} found`);
       pop.querySelectorAll(".res-item").forEach(item=>{
         item.addEventListener("click",()=>{
           selectChannel(item.dataset.id,item.dataset.name,item.dataset.avatar);
         });
       });
     }
-  }catch(e){if(my!==searchSeq)return;pop.innerHTML=`<div class="res-head">Search failed. Check your connection and try again.</div>`;}
+  }catch(e){if(my!==searchSeq)return;pop.innerHTML=`<div class="res-head">Search failed. Check your connection and try again.</div>`;say("Search failed. Try again.");}
   btn.disabled=false;btn.textContent="Search";
 }
 
 $("searchBtn").addEventListener("click",()=>doSearch($("searchInput").value.trim()));
 $("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter")doSearch($("searchInput").value.trim())});
 document.querySelectorAll(".ex-chip").forEach(c=>c.addEventListener("click",()=>{$("searchInput").value=c.dataset.q;doSearch(c.dataset.q)}));
+
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("resultsPop").classList.contains("show")){$("resultsPop").classList.remove("show");$("searchInput").focus()}});
+document.addEventListener("click",e=>{if(!e.target.closest(".search-wrap,#resultsPop"))$("resultsPop").classList.remove("show")});
 
 // ── select channel → preview last 5 videos ──
 async function selectChannel(id,name,avatar){
@@ -637,7 +650,8 @@ async function selectChannel(id,name,avatar){
   $("resultsPop").classList.remove("show");
   const prev=$("preview");
   prev.classList.add("show");
-  prev.innerHTML=`<div class="preview-card"><div class="preview-top"><div class="preview-meta"><div class="preview-name">${escapeHtml(name)}</div><div class="preview-stat">${sp()} Scanning last 5 videos for deals…</div></div></div></div>`;
+  prev.innerHTML=`<div class="preview-card"><div class="preview-top"><div class="preview-meta"><h2 class="preview-name">${escapeHtml(name)}</h2><div class="preview-stat">${sp()} Scanning last 5 videos for deals…</div></div></div></div>`;
+  focusPreview();say(`Scanning ${name} for deals`);
   prev.scrollIntoView({behavior:"smooth",block:"start"});
 
   try{
@@ -646,7 +660,8 @@ async function selectChannel(id,name,avatar){
     renderPreview(r.videos||[]);
   }catch(e){
     if(my!==previewSeq)return;
-    prev.innerHTML=`<div class="preview-card"><div class="preview-top"><div class="preview-meta"><div class="preview-name">${escapeHtml(name)}</div><div class="preview-stat" style="color:var(--bad)">Couldn't load videos. Try again.</div></div></div></div>`;
+    prev.innerHTML=`<div class="preview-card"><div class="preview-top"><div class="preview-meta"><h2 class="preview-name">${escapeHtml(name)}</h2><div class="preview-stat" style="color:var(--bad)">Couldn't load videos. Try again.</div></div></div></div>`;
+    focusPreview();say("Couldn't load videos. Try again.");
   }
 }
 
@@ -663,7 +678,7 @@ function fmtDate(iso){
 function renderPreview(videos){
   const totalDeals=videos.reduce((a,v)=>a+v.deals.length,0);
   const c=currentChannel;
-  const avatar=c.avatar&&c.avatar!=="undefined"?`<img class="preview-avatar" src="${escapeHtml(c.avatar)}" onerror="this.style.visibility='hidden'"/>`:"";
+  const avatar=c.avatar&&c.avatar!=="undefined"?`<img class="preview-avatar" src="${escapeHtml(c.avatar)}" alt="" onerror="this.style.visibility='hidden'"/>`:"";
 
   const vidsHtml=totalDeals===0?`<div class="vids-empty">No deals in the last ${videos.length||5} videos. Watch this channel and we'll text you when one shows up.</div>`:videos.map((v,i)=>{
     const deals=v.deals.map(d=>{
@@ -691,7 +706,7 @@ function renderPreview(videos){
       <div class="preview-top">
         ${avatar}
         <div class="preview-meta">
-          <div class="preview-name">${escapeHtml(c.name)}</div>
+          <h2 class="preview-name">${escapeHtml(c.name)}</h2>
           <div class="preview-stat">Last ${videos.length} videos scanned</div>
         </div>
         <span class="preview-count${totalDeals===0?" is-zero":""}">${totalDeals} deal${totalDeals!==1?"s":""}</span>
@@ -710,6 +725,8 @@ function renderPreview(videos){
     </div>`;
 
   $("ctaBtn").addEventListener("click",subscribeAndWatch);
+  focusPreview();
+  say(`${c.name}: ${totalDeals} deal${totalDeals!==1?"s":""} in the last ${videos.length} videos`);
 }
 
 // Channel names, titles, and links all come from YouTube (anyone can name a
@@ -764,7 +781,7 @@ async function loadSpotlight(){
     track.style.setProperty("--ticker-duration",`${Math.max(18,deals.length*4)}s`);
   }catch(e){
     section.hidden=true;
-  }
+  }finally{$("ticker")?.removeAttribute("aria-busy")}
 }
 
 // ── delegated one-tap copy for any code chip ──
@@ -829,11 +846,11 @@ async function loadWatched(){
   if(!chs.length){el.innerHTML=`<div class="empty-mini">Search a creator above and tap "Watch & text me deals" to start.</div>`;return;}
   el.innerHTML=chs.map(c=>`
     <div class="watched-item">
-      ${c.thumbnail?`<img class="watched-avatar" src="${escapeHtml(c.thumbnail)}" onerror="this.style.visibility='hidden'"/>`:`<div class="watched-avatar"></div>`}
+      ${c.thumbnail?`<img class="watched-avatar" src="${escapeHtml(c.thumbnail)}" alt="" onerror="this.style.visibility='hidden'"/>`:`<div class="watched-avatar"></div>`}
       <span class="watched-name">${escapeHtml(c.name)}</span>
       <div class="watched-actions">
-        <button class="icon-btn rescan" data-id="${escapeHtml(c.id)}" data-name="${escapeHtml(c.name)}" title="Check for new deals" aria-label="Check for new deals">${ICON_REFRESH}</button>
-        <button class="icon-btn danger remove" data-id="${escapeHtml(c.id)}" title="Stop watching" aria-label="Stop watching">${ICON_X}</button>
+        <button class="icon-btn rescan" data-id="${escapeHtml(c.id)}" data-name="${escapeHtml(c.name)}" title="Check for new deals" aria-label="Check ${escapeHtml(c.name)} for new deals">${ICON_REFRESH}</button>
+        <button class="icon-btn danger remove" data-id="${escapeHtml(c.id)}" title="Stop watching" aria-label="Stop watching ${escapeHtml(c.name)}">${ICON_X}</button>
       </div>
     </div>`).join("");
   el.querySelectorAll(".rescan").forEach(b=>b.addEventListener("click",async()=>{
@@ -946,7 +963,7 @@ function renderHistory(){
       return `<div class="hist-deal-row${expiredCls}">
         <span class="deal-badge">${escapeHtml(d.label)}</span>
         <span class="hist-deal-text">${code} ${escapeHtml(d.context)}${link?" "+link:""}${exp}</span>
-        <button class="icon-btn danger hist-del" data-id="${escapeHtml(d.id)}" title="Remove" aria-label="Remove">${ICON_X}</button>
+        <button class="icon-btn danger hist-del" data-id="${escapeHtml(d.id)}" title="Remove" aria-label="Remove deal ${escapeHtml(d.code||d.label||"")}">${ICON_X}</button>
       </div>`;
     }).join("");
     return `<div class="hist-group">
@@ -965,8 +982,8 @@ function renderHistory(){
 }
 
 document.querySelectorAll("#histFilter .hist-tab").forEach(t=>t.addEventListener("click",()=>{
-  document.querySelectorAll("#histFilter .hist-tab").forEach(x=>x.classList.remove("active"));
-  t.classList.add("active");
+  document.querySelectorAll("#histFilter .hist-tab").forEach(x=>{x.classList.remove("active");x.setAttribute("aria-pressed","false")});
+  t.classList.add("active");t.setAttribute("aria-pressed","true");
   histFilterMode=t.dataset.f;
   renderHistory();
 }));
