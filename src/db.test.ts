@@ -84,6 +84,18 @@ describe("deals", () => {
     expect(db.dealExists("v1", "Promo code", "Thanks to Secretlab for the chair: https://lmg.gg/secretlabltt")).toBe(true);
   });
 
+  test("dealSeenForChannel keys on code, else link, else context, per channel", () => {
+    const db = freshDb();
+    db.addDeal(baseDeal);
+    db.addDeal({ ...baseDeal, videoId: "v2", code: null, dealUrl: "https://x.com/a", context: "c2" });
+    db.addDeal({ ...baseDeal, videoId: "v3", code: null, dealUrl: null, context: "plain 10% off" });
+    expect(db.dealSeenForChannel("Creator One", "SAVE10", null, "z")).toBe(true);
+    expect(db.dealSeenForChannel("Creator One", null, "https://x.com/a", "z")).toBe(true);
+    expect(db.dealSeenForChannel("Creator One", null, null, "plain 10% off")).toBe(true);
+    expect(db.dealSeenForChannel("Creator One", "OTHER", null, "z")).toBe(false);
+    expect(db.dealSeenForChannel("Someone Else", "SAVE10", null, "z")).toBe(false);
+  });
+
   test("removeDeal deletes only that deal", () => {
     const db = freshDb();
     const a = db.addDeal(baseDeal);

@@ -1,5 +1,7 @@
-import { Hono } from "hono";
-import { cors } from "hono/cors";
+import { Hono, type Context } from "hono";
+import { HTTPException } from "hono/http-exception";
+import { csrf } from "hono/csrf";
+import { bearerAuth } from "hono/bearer-auth";
 import { serveStatic } from "hono/bun";
 import { db } from "./db";
 import {
@@ -7,6 +9,7 @@ import {
   previewChannel,
   scanChannelAndSave,
   resolveChannelName,
+  isChannelId,
 } from "./scanner";
 import {
   normalizePhone,
@@ -17,7 +20,30 @@ import {
 } from "./notify";
 
 const app = new Hono();
-app.use("*", cors());
+// Frontend is same-origin, so no CORS. csrf() blocks other sites from driving
+// the API through a visitor's browser (it checks Sec-Fetch-Site, so it still
+// works behind Render's TLS proxy).
+app.use("/api/*", csrf());
+
+// Writes (and anything that can trigger a text) need ADMIN_TOKEN. Demo mode
+// (no token, no Twilio) has nothing costly to protect, so it stays open.
+// bearerAuth does the timing-safe compare; we only reshape its errors to JSON.
+const unauthorized = (c: Context, error = "Unauthorized") => c.json({ error }, 401);
+const adminRequired = () => Boolean(process.env.ADMIN_TOKEN) || SMS_CONFIGURED;
+app.use("/api/*", async (c, next) => {
+  if (c.req.method === "GET") return next();
+  const token = process.env.ADMIN_TOKEN;
+  if (!token) {
+    if (!SMS_CONFIGURED) return next();
+    return unauthorized(c, "Set ADMIN_TOKEN on the server to make changes while real SMS is on.");
+  }
+  try {
+    return await bearerAuth({ token })(c, next);
+  } catch (e) {
+    if (e instanceof HTTPException) return unauthorized(c, "Admin token required.");
+    throw e;
+  }
+});
 
 // ── Static frontend ──────────────────────────────────────────────────────────
 app.use("/*", serveStatic({ root: "./public" }));
@@ -72,12 +98,23 @@ interface SpotlightDeal {
   publishedAt: string;
 }
 
-let spotlightCache: { deals: SpotlightDeal[]; expiresAt: number } | null = null;
+// Caches the promise, not the result, so visitors arriving while the first
+// fetch is still running share it instead of each re-fetching 9 channels.
+let spotlightCache: { deals: Promise<SpotlightDeal[]>; expiresAt: number } | null = null;
 const SPOTLIGHT_TTL_MS = 10 * 60_000;
 
-async function getSpotlightDeals(): Promise<SpotlightDeal[]> {
-  if (spotlightCache && spotlightCache.expiresAt > Date.now()) return spotlightCache.deals;
+function getSpotlightDeals(): Promise<SpotlightDeal[]> {
+  if (!spotlightCache || spotlightCache.expiresAt <= Date.now()) {
+    const entry = { deals: loadSpotlightDeals(), expiresAt: Date.now() + SPOTLIGHT_TTL_MS };
+    spotlightCache = entry;
+    // All fetches failed: drop the cache so the next request retries.
+    const clear = () => { if (spotlightCache === entry) spotlightCache = null; };
+    entry.deals.then((d) => d.length === 0 && clear(), clear);
+  }
+  return spotlightCache.deals;
+}
 
+async function loadSpotlightDeals(): Promise<SpotlightDeal[]> {
   const perChannel = await Promise.all(
     SPOTLIGHT_CHANNELS.map(async (ch) => {
       try {
@@ -117,8 +154,6 @@ async function getSpotlightDeals(): Promise<SpotlightDeal[]> {
     deals.push(d);
     if (deals.length >= 12) break;
   }
-
-  spotlightCache = { deals, expiresAt: Date.now() + SPOTLIGHT_TTL_MS };
   return deals;
 }
 
@@ -142,21 +177,18 @@ app.delete("/api/deals/:id", (c) => {
 app.get("/api/channels", (c) => c.json(db.getChannels()));
 
 app.post("/api/channels", async (c) => {
-  const { id, name, url, thumbnail } = await c.req.json<{
-    id?: string;
-    name?: string;
-    url?: string;
-    thumbnail?: string;
-  }>();
+  const { id, name, thumbnail } = await c.req.json<{ id?: unknown; name?: unknown; thumbnail?: unknown }>();
 
-  if (!id) return c.json({ error: "Missing channel id." }, 400);
-  const chName = name ?? (await resolveChannelName(id));
+  if (!isChannelId(id)) return c.json({ error: "Invalid channel id." }, 400);
+  const chName = typeof name === "string" && name.trim() ? name.trim().slice(0, 100) : await resolveChannelName(id);
 
   const channel = db.addChannel({
     id,
     name: chName,
-    url: url ?? `https://www.youtube.com/channel/${id}`,
-    thumbnail: thumbnail ?? null,
+    url: `https://www.youtube.com/channel/${id}`,
+    // Only YouTube's own avatar CDN, so a forged request can't make every
+    // visitor's browser load an arbitrary (e.g. tracking) image URL.
+    thumbnail: typeof thumbnail === "string" && /^https:\/\/yt3\.(ggpht|googleusercontent)\.com\//.test(thumbnail) ? thumbnail : null,
   });
 
   // Scan + text deals now, so the response can report how many were found
@@ -186,12 +218,6 @@ app.post("/api/channels/:id/scan", async (c) => {
   }
 });
 
-app.post("/api/scan-all", async (c) => {
-  const channels = db.getChannels();
-  for (const ch of channels) scanChannelAndSave(ch.id, ch.name, 5).catch(console.error);
-  return c.json({ ok: true, channelsQueued: channels.length });
-});
-
 // ── API: SMS subscriber ──────────────────────────────────────────────────────
 app.get("/api/sms", (c) => {
   const sub = db.getSubscriber();
@@ -200,12 +226,13 @@ app.get("/api/sms", (c) => {
     enabled: sub?.enabled ?? false,
     phoneMasked: sub ? maskPhone(sub.phone) : null,
     smsConfigured: SMS_CONFIGURED,
+    adminRequired: adminRequired(),
   });
 });
 
 app.post("/api/sms/subscribe", async (c) => {
-  const { phone } = await c.req.json<{ phone: string }>();
-  const normalized = normalizePhone(phone ?? "");
+  const { phone } = await c.req.json<{ phone?: unknown }>();
+  const normalized = normalizePhone(String(phone ?? ""));
   if (!normalized) {
     return c.json({ error: "Enter a valid phone number (e.g. +1 415 555 2671 or 4155552671)." }, 400);
   }
@@ -238,8 +265,6 @@ app.delete("/api/sms", (c) => {
   db.removeSubscriber();
   return c.json({ ok: true });
 });
-
-app.get("/api/notifications", (c) => c.json(db.getNotifications()));
 
 app.post("/api/sms/test", async (c) => {
   const sub = db.getSubscriber();

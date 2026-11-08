@@ -154,6 +154,7 @@
     -webkit-mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent);
     mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent);
   }
+  .ticker-copy{display:contents}
   .ticker-track{
     display:flex;gap:12px;width:max-content;
     animation:ticker-scroll var(--ticker-duration,32s) linear infinite;
@@ -236,7 +237,7 @@
 
   /* copyable code chip */
   .code-chip{
-    display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    font:inherit;appearance:none;margin:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
     background:var(--panel);border:1px solid #bcd9c5;border-radius:var(--r-sm);
     padding:2px 8px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-weight:700;
     color:var(--ink);letter-spacing:.4px;font-size:12.5px;transition:all .12s;
@@ -425,7 +426,7 @@
   <div class="search-wrap">
     <div class="search-box">
       <span class="search-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><path d="M14 14l-3.2-3.2"/></svg></span>
-      <input class="search-input" id="searchInput" type="text" placeholder="Search a YouTuber, e.g. MKBHD, Linus Tech Tips…" autocomplete="off"/>
+      <input class="search-input" id="searchInput" aria-label="Search YouTube channels" type="text" placeholder="Search a YouTuber, e.g. MKBHD, Linus Tech Tips…" autocomplete="off"/>
       <button class="search-btn" id="searchBtn">Search</button>
     </div>
     <div class="chip-row">
@@ -479,7 +480,7 @@
       <div class="decode-out">
         <p class="decode-label">What Snag catches</p>
         <div class="hist-deal-row"><span class="deal-badge">Sponsor</span><span class="hist-deal-text">Meter · <span class="deal-link">meter.com/example</span></span></div>
-        <div class="hist-deal-row"><span class="deal-badge">Promo code</span><span class="hist-deal-text"><span class="code-chip" data-code="SAVE20" title="Tap to copy"><span class="txt">SAVE20</span><span class="ico"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.2"/><path d="M2.5 10.5V3.5a1 1 0 0 1 1-1H10"/></svg></span></span> <span class="expiry soon">Ends Dec 25</span></span></div>
+        <div class="hist-deal-row"><span class="deal-badge">Promo code</span><span class="hist-deal-text"><button type="button" class="code-chip" data-code="SAVE20" title="Tap to copy" aria-label="Copy code SAVE20"><span class="txt">SAVE20</span><span class="ico"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.2"/><path d="M2.5 10.5V3.5a1 1 0 0 1 1-1H10"/></svg></span></button> <span class="expiry soon">Ends Dec 25</span></span></div>
       </div>
     </div>
   </section>
@@ -497,9 +498,9 @@
         <span class="sub-dot"></span>
         <div class="sub-info">Alerts on for <b id="subPhone"></b></div>
         <button class="btn btn-ghost" id="testBtn" style="padding:9px 16px;font-size:14px">Send test</button>
-        <button class="icon-btn danger" id="unsubBtn" title="Turn off"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+        <button class="icon-btn danger" id="unsubBtn" title="Turn off" aria-label="Turn off" aria-label="Turn off"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
       </div>
-      <div class="status" id="subStatus"></div>
+      <div class="status" id="subStatus" role="status" aria-live="polite"></div>
     </div>
   </div>
 
@@ -526,7 +527,7 @@
   Snag · reads public YouTube data · scans video descriptions for deals
 </footer>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 const API="";
@@ -547,31 +548,50 @@ const ICON_LOCK=`<svg width="12" height="12" viewBox="0 0 16 16" fill="none" str
 
 // ── helpers ──
 function $(id){return document.getElementById(id)}
+let _tok="";
+async function api(path,opts={}){
+  const go=async()=>{
+    let t=_tok;if(!t)try{t=localStorage.getItem("snagAdminToken")||""}catch{}
+    const res=await fetch(API+path,{...opts,headers:{...opts.headers,...(t?{Authorization:`Bearer ${t}`}:{})}});
+    return{res,j:await res.json().catch(()=>({}))};
+  };
+  let{res,j}=await go();
+  if(res.status===401&&/token/i.test(j.error||"")){
+    const t=(prompt("Admin token")||"").trim();
+    if(t){_tok=t;try{localStorage.setItem("snagAdminToken",t)}catch{}({res,j}=await go());}
+  }
+  if(!res.ok)throw new Error(j.error||`Request failed (${res.status})`);
+  return j;
+}
 let _tt;
 function toast(msg,ms=2800){const e=$("toast");e.textContent=msg;e.classList.add("show");clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove("show"),ms)}
 const sp=()=>`<span class="spin"></span>`;
+const safeUrl=u=>/^https?:\/\//i.test(u||"")?u:"#";
 function setStatus(id,html,state){const e=$(id);e.className=`status show ${state}`;e.innerHTML=html}
 function clearStatus(id){$(id).className="status"}
 
 // ── search ──
+let searchSeq=0,previewSeq=0;
 async function doSearch(q){
   if(!q)return;
+  const my=++searchSeq;
   const btn=$("searchBtn");btn.disabled=true;btn.innerHTML=sp();
   const pop=$("resultsPop");
   pop.classList.add("show");
   pop.innerHTML=`<div class="res-head">Searching…</div>`;
   try{
-    const r=await fetch(`${API}/api/search?q=${encodeURIComponent(q)}`).then(r=>r.json());
+    const r=await api(`/api/search?q=${encodeURIComponent(q)}`);
+    if(my!==searchSeq)return;
     const results=r.results||[];
-    if(!results.length){pop.innerHTML=`<div class="res-head">No channels found for "${q}"</div>`;}
+    if(!results.length){pop.innerHTML=`<div class="res-head">No channels found for "${escapeHtml(q)}"</div>`;}
     else{
       pop.innerHTML=`<div class="res-head">${results.length} channel${results.length>1?"s":""} found, pick one</div>`+
         results.map(c=>`
-          <button class="res-item" data-id="${c.id}" data-name="${c.name.replace(/"/g,'&quot;')}" data-avatar="${c.thumbnail}">
-            <img class="res-avatar" src="${c.thumbnail}" loading="lazy" onerror="this.style.visibility='hidden'"/>
+          <button class="res-item" data-id="${escapeHtml(c.id)}" data-name="${escapeHtml(c.name)}" data-avatar="${escapeHtml(c.thumbnail)}">
+            <img class="res-avatar" src="${escapeHtml(c.thumbnail)}" loading="lazy" onerror="this.style.visibility='hidden'"/>
             <div class="res-info">
-              <div class="res-name">${c.name}</div>
-              <div class="res-sub">${c.subscribers||""}</div>
+              <div class="res-name">${escapeHtml(c.name)}</div>
+              <div class="res-sub">${escapeHtml(c.subscribers)}</div>
             </div>
             <span class="res-go">View deals ${ICON_CHEVRON}</span>
           </button>`).join("");
@@ -581,7 +601,7 @@ async function doSearch(q){
         });
       });
     }
-  }catch(e){pop.innerHTML=`<div class="res-head">Search failed. Try again.</div>`;}
+  }catch(e){if(my!==searchSeq)return;pop.innerHTML=`<div class="res-head">Search failed. Try again.</div>`;}
   btn.disabled=false;btn.textContent="Search";
 }
 
@@ -592,17 +612,20 @@ document.querySelectorAll(".ex-chip").forEach(c=>c.addEventListener("click",()=>
 // ── select channel → preview last 5 videos ──
 async function selectChannel(id,name,avatar){
   currentChannel={id,name,avatar};
+  const my=++previewSeq;
   $("resultsPop").classList.remove("show");
   const prev=$("preview");
   prev.classList.add("show");
-  prev.innerHTML=`<div class="preview-card"><div class="preview-top"><div class="preview-meta"><div class="preview-name">${name}</div><div class="preview-stat">${sp()} Scanning last 5 videos for deals…</div></div></div></div>`;
+  prev.innerHTML=`<div class="preview-card"><div class="preview-top"><div class="preview-meta"><div class="preview-name">${escapeHtml(name)}</div><div class="preview-stat">${sp()} Scanning last 5 videos for deals…</div></div></div></div>`;
   prev.scrollIntoView({behavior:"smooth",block:"start"});
 
   try{
-    const r=await fetch(`${API}/api/channel/${id}/preview?name=${encodeURIComponent(name)}`).then(r=>r.json());
+    const r=await api(`/api/channel/${encodeURIComponent(id)}/preview?name=${encodeURIComponent(name)}`);
+    if(my!==previewSeq)return;
     renderPreview(r.videos||[]);
   }catch(e){
-    prev.innerHTML=`<div class="preview-card"><div class="preview-top"><div class="preview-meta"><div class="preview-name">${name}</div><div class="preview-stat" style="color:var(--bad)">Couldn't load videos. Try again.</div></div></div></div>`;
+    if(my!==previewSeq)return;
+    prev.innerHTML=`<div class="preview-card"><div class="preview-top"><div class="preview-meta"><div class="preview-name">${escapeHtml(name)}</div><div class="preview-stat" style="color:var(--bad)">Couldn't load videos. Try again.</div></div></div></div>`;
   }
 }
 
@@ -619,22 +642,22 @@ function fmtDate(iso){
 function renderPreview(videos){
   const totalDeals=videos.reduce((a,v)=>a+v.deals.length,0);
   const c=currentChannel;
-  const avatar=c.avatar&&c.avatar!=="undefined"?`<img class="preview-avatar" src="${c.avatar}" onerror="this.style.visibility='hidden'"/>`:"";
+  const avatar=c.avatar&&c.avatar!=="undefined"?`<img class="preview-avatar" src="${escapeHtml(c.avatar)}" onerror="this.style.visibility='hidden'"/>`:"";
 
   const vidsHtml=videos.map((v,i)=>{
     const deals=v.deals.map(d=>{
       const codePart=d.code?`${codeChip(d.code)} `:"";
-      const linkPart=d.url?` <a class="deal-link" href="${d.url}" target="_blank" rel="noreferrer">${d.url.replace(/^https?:\/\//,"")}</a>`:"";
+      const linkPart=d.url?` <a class="deal-link" href="${escapeHtml(safeUrl(d.url))}" target="_blank" rel="noreferrer">${escapeHtml(d.url.replace(/^https?:\/\//,""))}</a>`:"";
       const exp=expiryPill(d.expiresAt,d.expiryText);
       return `<div class="deal-line ${d.code?"":"nocode"}">
-        <span class="deal-badge">${d.label}</span>
+        <span class="deal-badge">${escapeHtml(d.label)}</span>
         <span class="deal-text">${codePart}${escapeHtml(d.context)}${linkPart}${exp}</span>
       </div>`;
     }).join("");
     return `<div class="vid">
       <div class="vid-idx">${i+1}</div>
       <div class="vid-body">
-        <div class="vid-title"><a href="${v.url}" target="_blank" rel="noreferrer">${escapeHtml(v.title)}</a></div>
+        <div class="vid-title"><a href="${escapeHtml(safeUrl(v.url))}" target="_blank" rel="noreferrer">${escapeHtml(v.title)}</a></div>
         <div class="vid-date">${fmtDate(v.publishedAt)}</div>
         ${deals?`<div class="vid-deals">${deals}</div>`:`<div class="vid-nodeal">No deal detected in this video's description</div>`}
       </div>
@@ -647,21 +670,21 @@ function renderPreview(videos){
       <div class="preview-top">
         ${avatar}
         <div class="preview-meta">
-          <div class="preview-name">${c.name}</div>
+          <div class="preview-name">${escapeHtml(c.name)}</div>
           <div class="preview-stat">Last ${videos.length} videos scanned</div>
         </div>
         <span class="preview-count">${totalDeals} deal${totalDeals!==1?"s":""}</span>
       </div>
       <div class="vids">${vidsHtml}</div>
       <div class="preview-cta">
-        <div class="cta-title">${ICON_PHONE} Get ${c.name}'s deals texted to you</div>
+        <div class="cta-title">${ICON_PHONE} Get ${escapeHtml(c.name)}'s deals texted to you</div>
         <div class="cta-sub">We'll watch this channel and text you new promo codes automatically, so you never miss one again.</div>
         <div class="cta-form">
-          <input class="cta-input" id="ctaPhone" type="tel" placeholder="${subscriberPhone?'Already subscribed':'Your phone number'}" ${subscriberPhone?'disabled':''} value="${subscriberPhone||''}"/>
+          <input class="cta-input" id="ctaPhone" aria-label="Phone number for deal texts" type="tel" placeholder="${subscriberPhone?'Already subscribed':'Your phone number'}" ${subscriberPhone?'disabled':''} value="${escapeHtml(subscriberPhone)}"/>
           <button class="btn btn-primary" id="ctaBtn">${isWatched?ICON_CHECK+' Watching':'Watch & text me deals'}</button>
         </div>
         <div class="cta-note">${ICON_LOCK} No spam. Reply STOP anytime.</div>
-        <div class="status" id="ctaStatus"></div>
+        <div class="status" id="ctaStatus" role="status" aria-live="polite"></div>
       </div>
     </div>`;
 
@@ -669,13 +692,15 @@ function renderPreview(videos){
   if(isWatched)$("ctaBtn").disabled=true;
 }
 
-function escapeHtml(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+// Channel names, titles, and links all come from YouTube (anyone can name a
+// channel "<img onerror=...>"), so every one goes through this, attributes too.
+function escapeHtml(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
 
 // ── code chip + expiry pill helpers ──
 function codeChip(code){
   if(!code)return"";
   const safe=escapeHtml(code);
-  return `<span class="code-chip" data-code="${safe}" title="Tap to copy"><span class="txt">${safe}</span><span class="ico">${ICON_COPY}</span></span>`;
+  return `<button type="button" class="code-chip" data-code="${safe}" title="Tap to copy" aria-label="Copy code ${safe}"><span class="txt">${safe}</span><span class="ico">${ICON_COPY}</span></button>`;
 }
 function expiryPill(iso,text){
   if(!iso)return"";
@@ -693,14 +718,14 @@ function catchLink(url){
   if(!url)return"";
   try{
     const host=new URL(url).hostname.replace(/^www\./,"");
-    return `<a class="catch-link" href="${url}" target="_blank" rel="noreferrer">${host}</a>`;
+    return `<a class="catch-link" href="${escapeHtml(safeUrl(url))}" target="_blank" rel="noreferrer">${escapeHtml(host)}</a>`;
   }catch{return"";}
 }
 
 async function loadSpotlight(){
   const section=$("spotlight");
   try{
-    const r=await fetch(`${API}/api/spotlight`).then(r=>r.json());
+    const r=await api("/api/spotlight");
     const deals=r.deals||[];
     if(!deals.length){section.hidden=true;return;}
 
@@ -708,14 +733,14 @@ async function loadSpotlight(){
       <div class="catch-card">
         <span class="catch-chan">${escapeHtml(d.channelName)}</span>
         <span class="catch-title">${escapeHtml(d.videoTitle)}</span>
-        <span class="deal-badge${d.code?"":" nocode"}">${d.label}</span>
+        <span class="deal-badge${d.code?"":" nocode"}">${escapeHtml(d.label)}</span>
         ${d.code?codeChip(d.code):catchLink(d.url)}
       </div>`).join("");
 
     // Duplicate once for a seamless loop; a static single copy for reduced motion.
     const reduceMotion=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const track=$("tickerTrack");
-    track.innerHTML=reduceMotion?cards:cards+cards;
+    track.innerHTML=`<div class="ticker-copy">${cards}</div>`+(reduceMotion?"":`<div class="ticker-copy" aria-hidden="true" inert>${cards}</div>`);
     track.style.setProperty("--ticker-duration",`${Math.max(18,deals.length*4)}s`);
   }catch(e){
     section.hidden=true;
@@ -749,57 +774,64 @@ async function subscribeAndWatch(){
 
   btn.disabled=true;btn.innerHTML=sp();
 
+  const fail=e=>{setStatus("ctaStatus",`${ICON_X_SM} ${escapeHtml(e.message)}`,"err");btn.disabled=false;btn.textContent="Watch & text me deals"};
+
   // 1. subscribe (if not already)
+  let subscribed=false;
   if(!subscriberPhone&&phone){
-    const r=await fetch(`${API}/api/sms/subscribe`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone})}).then(r=>r.json()).catch(e=>({error:e.message}));
-    if(r.error){setStatus("ctaStatus",`${ICON_X_SM} ${r.error}`,"err");btn.disabled=false;btn.textContent="Watch & text me deals";return;}
-    subscriberPhone=r.phoneMasked;
-    if(r.mode==="demo")$("demoBadge").style.display="inline-block";
+    try{
+      const r=await api("/api/sms/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone})});
+      subscriberPhone=r.phoneMasked;subscribed=true;
+      if(r.mode==="demo")$("demoBadge").style.display="inline-block";
+    }catch(e){return fail(e)}
   }
 
   // 2. add channel to watch list (this also scans + texts new deals)
-  const w=await fetch(`${API}/api/channels`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:c.id,name:c.name,thumbnail:c.avatar})}).then(r=>r.json()).catch(e=>({error:e.message}));
-  if(w.error){setStatus("ctaStatus",`${ICON_X_SM} ${w.error}`,"err");btn.disabled=false;btn.textContent="Watch & text me deals";return;}
+  let w;
+  try{w=await api("/api/channels",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:c.id,name:c.name,thumbnail:c.avatar})})}
+  catch(e){if(subscribed)loadSub();return fail(e)}
 
   watchedIds.add(c.id);
   btn.innerHTML=`${ICON_CHECK} Watching`;
   const dealsTexted=w.newDeals||0;
-  setStatus("ctaStatus",`${ICON_CHECK_SM} Watching ${c.name}. ${dealsTexted>0?`Texted you ${dealsTexted} deal${dealsTexted>1?"s":""} we found.`:"You'll get a text when a new deal drops."}`,"ok");
+  setStatus("ctaStatus",`${ICON_CHECK_SM} Watching ${escapeHtml(c.name)}.${dealsTexted>0?`Texted you ${dealsTexted} deal${dealsTexted>1?"s":""} we found.`:"You'll get a text when a new deal drops."}`,"ok");
   toast(`Now watching ${c.name}`);
   loadWatched();loadSub();loadHistory();
 }
 
 // ── watched list ──
 async function loadWatched(){
-  const chs=await fetch(`${API}/api/channels`).then(r=>r.json()).catch(()=>[]);
+  let chs;
+  try{chs=await api("/api/channels")}catch(e){$("watchedList").innerHTML=`<div class="empty-mini">Couldn't load your channels. ${escapeHtml(e.message)}</div>`;return}
   watchedIds=new Set(chs.map(c=>c.id));
   const el=$("watchedList");
   if(!chs.length){el.innerHTML=`<div class="empty-mini">Search a creator above and tap "Watch & text me deals" to start.</div>`;return;}
   el.innerHTML=chs.map(c=>`
     <div class="watched-item">
-      ${c.thumbnail?`<img class="watched-avatar" src="${c.thumbnail}" onerror="this.style.visibility='hidden'"/>`:`<div class="watched-avatar"></div>`}
-      <span class="watched-name">${c.name}</span>
+      ${c.thumbnail?`<img class="watched-avatar" src="${escapeHtml(c.thumbnail)}" onerror="this.style.visibility='hidden'"/>`:`<div class="watched-avatar"></div>`}
+      <span class="watched-name">${escapeHtml(c.name)}</span>
       <div class="watched-actions">
-        <button class="icon-btn rescan" data-id="${c.id}" data-name="${c.name.replace(/"/g,'&quot;')}" title="Check for new deals">${ICON_REFRESH}</button>
-        <button class="icon-btn danger remove" data-id="${c.id}" title="Stop watching">${ICON_X}</button>
+        <button class="icon-btn rescan" data-id="${escapeHtml(c.id)}" data-name="${escapeHtml(c.name)}" title="Check for new deals" aria-label="Check for new deals">${ICON_REFRESH}</button>
+        <button class="icon-btn danger remove" data-id="${escapeHtml(c.id)}" title="Stop watching" aria-label="Stop watching">${ICON_X}</button>
       </div>
     </div>`).join("");
   el.querySelectorAll(".rescan").forEach(b=>b.addEventListener("click",async()=>{
     b.disabled=true;b.innerHTML=sp();
-    const r=await fetch(`${API}/api/channels/${b.dataset.id}/scan`,{method:"POST"}).then(r=>r.json()).catch(e=>({error:e.message}));
+    let r;
+    try{r=await api(`/api/channels/${encodeURIComponent(b.dataset.id)}/scan`,{method:"POST"})}catch(e){r={error:e.message}}
     b.disabled=false;b.innerHTML=ICON_REFRESH;
     if(r.error)toast(`Error: ${r.error}`);
     else {toast(r.newDeals>0?`Texted you ${r.newDeals} new deal${r.newDeals>1?"s":""} from ${b.dataset.name}`:`No new deals from ${b.dataset.name} yet`);loadHistory();}
   }));
   el.querySelectorAll(".remove").forEach(b=>b.addEventListener("click",async()=>{
-    await fetch(`${API}/api/channels/${b.dataset.id}`,{method:"DELETE"});
-    loadWatched();
+    try{await api(`/api/channels/${encodeURIComponent(b.dataset.id)}`,{method:"DELETE"});loadWatched()}catch(e){toast(`Error: ${e.message}`)}
   }));
 }
 
 // ── subscriber status ──
 async function loadSub(){
-  const s=await fetch(`${API}/api/sms`).then(r=>r.json()).catch(()=>({}));
+  let s;
+  try{s=await api("/api/sms")}catch(e){toast("Couldn't load your alert settings");return}
   if(s.subscribed){
     subscriberPhone=s.phoneMasked;
     $("subPanel").style.display="block";
@@ -812,15 +844,16 @@ async function loadSub(){
 
 $("testBtn")?.addEventListener("click",async()=>{
   const b=$("testBtn");b.disabled=true;b.innerHTML=sp();
-  const r=await fetch(`${API}/api/sms/test`,{method:"POST"}).then(r=>r.json()).catch(e=>({error:e.message}));
+  let r;
+  try{r=await api("/api/sms/test",{method:"POST"})}catch(e){r={error:e.message}}
   b.disabled=false;b.textContent="Send test";
-  if(r.error)setStatus("subStatus",`${ICON_X_SM} ${r.error}`,"err");
+  if(r.error)setStatus("subStatus",`${ICON_X_SM} ${escapeHtml(r.error)}`,"err");
   else setStatus("subStatus",r.mode==="demo"?`${ICON_CHECK_SM} Demo: text logged (no SMS provider connected yet).`:`${ICON_CHECK_SM} Test text sent!`,"ok");
 });
 
 $("unsubBtn")?.addEventListener("click",async()=>{
   if(!confirm("Turn off all text alerts?"))return;
-  await fetch(`${API}/api/sms`,{method:"DELETE"});
+  try{await api("/api/sms",{method:"DELETE"})}catch(e){return toast(`Error: ${e.message}`)}
   subscriberPhone=null;
   loadSub();toast("Alerts turned off");
 });
@@ -886,18 +919,18 @@ function renderHistory(){
     const rows=g.deals.map(d=>{
       const code=d.code?codeChip(d.code):"";
       const exp=expiryPill(d.expiresAt,d.expiryText);
-      const link=d.dealUrl?`<a class="deal-link" href="${d.dealUrl}" target="_blank" rel="noreferrer">${d.dealUrl.replace(/^https?:\/\//,"")}</a>`:"";
+      const link=d.dealUrl?`<a class="deal-link" href="${escapeHtml(safeUrl(d.dealUrl))}" target="_blank" rel="noreferrer">${escapeHtml(d.dealUrl.replace(/^https?:\/\//,""))}</a>`:"";
       const expiredCls=dealIsExpired(d)?" is-expired":"";
       return `<div class="hist-deal-row${expiredCls}">
-        <span class="deal-badge">${d.label}</span>
+        <span class="deal-badge">${escapeHtml(d.label)}</span>
         <span class="hist-deal-text">${code} ${escapeHtml(d.context)}${link?" "+link:""}${exp}</span>
-        <button class="icon-btn danger hist-del" data-id="${d.id}" title="Remove">${ICON_X}</button>
+        <button class="icon-btn danger hist-del" data-id="${escapeHtml(d.id)}" title="Remove" aria-label="Remove">${ICON_X}</button>
       </div>`;
     }).join("");
     return `<div class="hist-group">
       <div class="hist-group-head">
         <span class="hist-group-chan">${ICON_TV} ${escapeHtml(g.channelName)}</span>
-        <a class="hist-group-vid" href="${g.videoUrl}" target="_blank" rel="noreferrer">${escapeHtml(g.videoTitle||"")}</a>
+        <a class="hist-group-vid" href="${escapeHtml(safeUrl(g.videoUrl))}" target="_blank" rel="noreferrer">${escapeHtml(g.videoTitle||"")}</a>
         <span class="hist-group-time">${g.deals.length} deal${g.deals.length>1?"s":""} · ${fmtDate(g.detectedAt)}</span>
       </div>
       <div class="hist-deals">${rows}</div>
@@ -905,8 +938,7 @@ function renderHistory(){
   }).join("");
 
   el.querySelectorAll(".hist-del").forEach(b=>b.addEventListener("click",async()=>{
-    await fetch(`${API}/api/deals/${b.dataset.id}`,{method:"DELETE"});
-    loadHistory();
+    try{await api(`/api/deals/${encodeURIComponent(b.dataset.id)}`,{method:"DELETE"});loadHistory()}catch(e){toast(`Error: ${e.message}`)}
   }));
 }
 
@@ -920,14 +952,14 @@ document.querySelectorAll("#histFilter .hist-tab").forEach(t=>t.addEventListener
 $("clearHistBtn")?.addEventListener("click",async()=>{
   if(!allDeals.length)return;
   if(!confirm("Clear all saved deals from history?"))return;
-  await Promise.all(allDeals.map(d=>fetch(`${API}/api/deals/${d.id}`,{method:"DELETE"})));
+  const res=await Promise.allSettled(allDeals.map(d=>api(`/api/deals/${encodeURIComponent(d.id)}`,{method:"DELETE"})));
+  const bad=res.filter(x=>x.status==="rejected");
   loadHistory();
-  toast("History cleared");
+  toast(bad.length?`Couldn't remove ${bad.length} of ${res.length} deals: ${bad[0].reason.message}`:"History cleared");
 });
 
 async function loadHistory(){
-  const deals=await fetch(`${API}/api/deals`).then(r=>r.json()).catch(()=>[]);
-  allDeals=deals;
+  try{allDeals=await api("/api/deals")}catch(e){$("histList").innerHTML=`<div class="empty-mini">Couldn't load your deals. ${escapeHtml(e.message)}</div>`;return}
   renderHistory();
 }
 </script>

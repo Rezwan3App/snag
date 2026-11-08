@@ -58,6 +58,8 @@ All optional, via environment variables:
 | `TWILIO_ACCOUNT_SID` | Twilio credentials for real SMS | demo mode |
 | `TWILIO_AUTH_TOKEN` | Twilio auth token | demo mode |
 | `TWILIO_FROM_NUMBER` | Sending phone number | demo mode |
+| `ADMIN_TOKEN` | Bearer token required on every non-GET API call. Required when Twilio is configured (changes are rejected without it); unset in demo mode leaves the API open | unset |
+| `SMS_MAX_PER_HOUR` | Cap on real texts sent per hour, so the open API can't run up your Twilio bill | `20` |
 
 ## Stack
 

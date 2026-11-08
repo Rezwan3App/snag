@@ -73,7 +73,19 @@ export interface SendResult {
   error?: string;
 }
 
+// The API has no auth, so on a public deploy anyone can trigger texts. Cap real
+// sends so a script can't run up the Twilio bill.
+// ponytail: global in-memory cap, resets on restart; per-number/per-IP limits or real auth if abused.
+// A typo'd value must not turn the cap off (length >= NaN is always false).
+// Read per call so tests can change it.
+const maxPerHour = () => {
+  const n = Number(process.env.SMS_MAX_PER_HOUR);
+  return Number.isFinite(n) && n >= 0 ? n : 20;
+};
+const recentSends: number[] = [];
+
 export async function sendSms(to: string, body: string): Promise<SendResult> {
+  if (body.length > 1600) body = body.slice(0, 1599) + "…"; // Twilio's per-message cap
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_FROM_NUMBER;
@@ -84,6 +96,13 @@ export async function sendSms(to: string, body: string): Promise<SendResult> {
     return { mode: "demo", ok: true };
   }
 
+  const hourAgo = Date.now() - 3_600_000;
+  while (recentSends.length && recentSends[0]! < hourAgo) recentSends.shift();
+  if (recentSends.length >= maxPerHour()) {
+    return { mode: "twilio", ok: false, error: "Hourly text limit reached. Try again later." };
+  }
+  recentSends.push(Date.now());
+
   try {
     const auth = Buffer.from(`${sid}:${token}`).toString("base64");
     const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
@@ -93,6 +112,7 @@ export async function sendSms(to: string, body: string): Promise<SendResult> {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({ To: to, From: from, Body: body }).toString(),
+      signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) {
       const txt = await res.text();
@@ -106,10 +126,11 @@ export async function sendSms(to: string, body: string): Promise<SendResult> {
 
 // ── High-level: notify the subscriber about newly found deals ────────────────
 
-export async function notifyMissedDeals(deals: DealLike[], source: string): Promise<void> {
-  if (deals.length === 0) return;
+// Returns false only when a send was attempted and failed, so callers can retry.
+export async function notifyMissedDeals(deals: DealLike[], source: string): Promise<boolean> {
+  if (deals.length === 0) return true;
   const sub = db.getSubscriber();
-  if (!sub || !sub.enabled) return;
+  if (!sub || !sub.enabled) return true;
 
   const body = buildDealSms(deals);
   const result = await sendSms(sub.phone, body);
@@ -123,6 +144,7 @@ export async function notifyMissedDeals(deals: DealLike[], source: string): Prom
     ok: result.ok,
     error: result.error ?? null,
   });
+  return result.ok;
 }
 
 export const SMS_CONFIGURED = Boolean(

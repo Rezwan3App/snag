@@ -128,6 +128,13 @@ export function createDb(path: string) {
       return !!row;
     },
 
+    // Evergreen sponsor lists repeat on every upload. Key = code, else link,
+    // else (no code or link) the matched sentence. Call before inserting.
+    dealSeenForChannel: (channelName: string, code: string | null, dealUrl: string | null, context: string): boolean => {
+      const [col, val] = code ? ["code", code] : dealUrl ? ["dealUrl", dealUrl] : ["context", context];
+      return !!conn.query(`SELECT 1 FROM deals WHERE channelName = ? AND ${col} = ?`).get(channelName, val);
+    },
+
     addDeal: (deal: Omit<Deal, "id" | "detectedAt">): Deal => {
       const detectedAt = new Date().toISOString();
       const result = conn

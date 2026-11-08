@@ -11,3 +11,6 @@ services:
       # Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER in
       # the Render dashboard to send real texts; without them Snag runs in
       # demo mode and logs the messages it would send.
+      # Set ADMIN_TOKEN (any long random string) to require
+      # "Authorization: Bearer <token>" for every non-GET API call. Required
+      # once Twilio is on, or all changes are rejected.

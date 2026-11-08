@@ -27,6 +27,11 @@ export interface ScannedVideo {
   deals: DetectedDeal[];
 }
 
+// YouTube channel IDs are always "UC" + 22 URL-safe base64 chars.
+export const isChannelId = (id: unknown): id is string => typeof id === "string" && /^UC[\w-]{22}$/.test(id);
+
+const FETCH_TIMEOUT_MS = 10_000;
+
 // ── Channel search (works from cloud — no IP block) ──────────────────────────
 
 export async function searchChannels(query: string): Promise<ChannelSearchResult[]> {
@@ -37,6 +42,7 @@ export async function searchChannels(query: string): Promise<ChannelSearchResult
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
       "Accept-Language": "en-US,en;q=0.9",
     },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   const html = await res.text();
 
@@ -78,9 +84,9 @@ export async function searchChannels(query: string): Promise<ChannelSearchResult
 // ── Promo detection (from video descriptions via RSS) ────────────────────────
 
 const PROMO_RULES: { pattern: RegExp; label: string }[] = [
-  { pattern: /use\s+(?:code|coupon|promo\s*code)\s+["']?([A-Z0-9][A-Z0-9_\-]{2,19})["']?/gi, label: "Promo code" },
+  { pattern: /use\s+(?:code|coupon|promo\s*code)[:\s]+["']?([A-Z0-9][A-Z0-9_\-]{2,19})["']?/gi, label: "Promo code" },
   { pattern: /(?:discount|promo|coupon)\s+code[:\s]+["']?([A-Z0-9][A-Z0-9_\-]{2,19})["']?/gi, label: "Discount code" },
-  { pattern: /code\s+["']?([A-Z0-9][A-Z0-9_\-]{2,19})["']?\s+(?:for|to\s+(?:get|save))/gi, label: "Promo code" },
+  { pattern: /code[:\s]+["']?([A-Z0-9][A-Z0-9_\-]{2,19})["']?\s+(?:for|to\s+(?:get|save)|at\s+checkout)/gi, label: "Promo code" },
   { pattern: /(?:get|save)\s+(?:up\s+to\s+)?(\d+%|\$\d+)\s+off/gi, label: "Discount" },
   { pattern: /(\d+%)\s+(?:off|discount)/gi, label: "Discount" },
   { pattern: /free\s+trial\b/gi, label: "Free trial" },
@@ -143,7 +149,7 @@ function findDealUrl(description: string, nearIndex?: number): string | null {
 // no per-line "sponsor" keyword to match on — so PROMO_RULES misses them
 // entirely. Parse that block directly instead.
 const PARTNER_HEADER_RE = /(?:channel\s+partners|our\s+sponsors)\s*:?\s*\n/i;
-const PARTNER_LINE_RE = /^\s*([A-Za-z][\w&'".\- ]{0,30}?)\s*[-–:]\s*.*?(https?:\/\/\S+?)[).,]*\s*$/;
+const PARTNER_LINE_RE = /^\s*([A-Za-z][\w&'".\- ]{0,30}?)\s*[-–:]\s*.*?(https?:\/\/[^\s"'<>]+?)[).,]*\s*$/;
 
 function findPartnerListDeals(description: string): DetectedDeal[] {
   const header = description.match(PARTNER_HEADER_RE);
@@ -185,13 +191,26 @@ const MONTHS: Record<string, number> = {
 };
 
 // Phrases that signal an expiry is nearby
-const EXPIRY_TRIGGER = /(?:ends?|expires?|expiring|valid\s+(?:un)?til|through|offer\s+ends?|deal\s+ends?|good\s+(?:un)?til|until|before|by)\b/i;
+const EXPIRY_TRIGGER = /\b(?:ends?|expires?|expiring|valid\s+(?:un)?til|through|offer\s+ends?|deal\s+ends?|good\s+(?:un)?til|until|before|by)\b/gi;
 
 function parseExpiry(description: string): { iso: string; text: string } | null {
-  // Only look near an expiry trigger word to avoid matching random dates
-  const trigger = description.match(EXPIRY_TRIGGER);
-  if (!trigger) return null;
-  const idx = trigger.index ?? 0;
+  // Only look near an expiry trigger word to avoid matching random dates.
+  // Check every trigger, not just the first: "by"/"through" are common words
+  // ("sponsored by X") that usually appear well before the real "ends June 21".
+  for (const trigger of description.matchAll(EXPIRY_TRIGGER)) {
+    const found = parseDateNear(description, trigger.index ?? 0);
+    if (found) return found;
+  }
+  return null;
+}
+
+// Date.UTC rolls "Feb 30" into March; reject anything that didn't round-trip.
+function validDate(yr: number, month: number, day: number): Date | null {
+  const d = new Date(Date.UTC(yr, month, day, 23, 59, 59));
+  return d.getUTCMonth() === month && d.getUTCDate() === day ? d : null;
+}
+
+function parseDateNear(description: string, idx: number): { iso: string; text: string } | null {
   const window = description.slice(idx, Math.min(description.length, idx + 80));
 
   const now = new Date();
@@ -206,12 +225,12 @@ function parseExpiry(description: string): { iso: string; text: string } | null 
     const day = parseInt(monthDay[2], 10);
     let yr = monthDay[3] ? parseInt(monthDay[3], 10) : year;
     if (month !== undefined && day >= 1 && day <= 31) {
-      let d = new Date(Date.UTC(yr, month, day, 23, 59, 59));
+      let d = validDate(yr, month, day);
       // If no explicit year and the date is well in the past, assume next year
-      if (!monthDay[3] && d.getTime() < now.getTime() - 7 * 864e5) {
-        d = new Date(Date.UTC(yr + 1, month, day, 23, 59, 59));
+      if (d && !monthDay[3] && d.getTime() < now.getTime() - 7 * 864e5) {
+        d = validDate(yr + 1, month, day);
       }
-      return { iso: d.toISOString(), text: monthDay[0].trim() };
+      if (d) return { iso: d.toISOString(), text: monthDay[0].trim() };
     }
   }
 
@@ -223,11 +242,11 @@ function parseExpiry(description: string): { iso: string; text: string } | null 
     let yr = numeric[3] ? parseInt(numeric[3], 10) : year;
     if (yr < 100) yr += 2000;
     if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
-      let d = new Date(Date.UTC(yr, month, day, 23, 59, 59));
-      if (!numeric[3] && d.getTime() < now.getTime() - 7 * 864e5) {
-        d = new Date(Date.UTC(yr + 1, month, day, 23, 59, 59));
+      let d = validDate(yr, month, day);
+      if (d && !numeric[3] && d.getTime() < now.getTime() - 7 * 864e5) {
+        d = validDate(yr + 1, month, day);
       }
-      return { iso: d.toISOString(), text: numeric[0].trim() };
+      if (d) return { iso: d.toISOString(), text: numeric[0].trim() };
     }
   }
 
@@ -246,6 +265,9 @@ export function detectDeals(description: string): DetectedDeal[] {
 
       // A bare sponsor mention with no findable link isn't actionable.
       if (rule.label === "Sponsor" && !url) continue;
+
+      // The gi flag lets [A-Z0-9] match lowercase ("code below"); real codes are uppercase.
+      if (match[1] && match[1] !== match[1].toUpperCase()) continue;
 
       const code = match[1] && /[A-Z]/i.test(match[1]) && !match[1].includes("%") && !match[1].includes("$")
         ? match[1].toUpperCase()
@@ -290,26 +312,32 @@ interface RssVideo {
   publishedAt: string;
 }
 
+// &amp; must go last, or "&amp;lt;" (a literal "&lt;" in the text) double-decodes to "<".
 function decodeEntities(s: string): string {
   return s
-    .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
 }
 
 export async function fetchRssXml(
   channelId: string,
   opts: { attempts?: number; baseDelayMs?: number } = {},
 ): Promise<string> {
+  // Every scan/preview/name lookup routes through here, so one guard covers them all.
+  if (!isChannelId(channelId)) throw new Error("Invalid channel id.");
   const attempts = opts.attempts ?? 6;
   const baseDelayMs = opts.baseDelayMs ?? 350;
   const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
   let xml = "";
   let lastStatus = 0;
   for (let attempt = 0; attempt < attempts; attempt++) {
-    const res = await fetch(rssUrl, { headers: { "User-Agent": "Mozilla/5.0" } });
+    const res = await fetch(rssUrl, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
     lastStatus = res.status;
     if (res.ok) {
       xml = await res.text();
@@ -391,12 +419,19 @@ export async function scanChannelAndSave(
 ): Promise<{ videos: ScannedVideo[]; newDeals: number }> {
   const scanned = toScannedVideos(await fetchRssVideos(channelId, max));
   const freshDeals: any[] = [];
+  const toText: any[] = [];
+  // Evergreen sponsor lists repeat on every upload: text a deal once per
+  // channel (key = code, else link), and never once it has expired.
+  const batchKeys = new Set<string>();
 
   for (const v of scanned) {
     db.markVideoScanned(v.id);
 
     for (const d of v.deals) {
       if (db.dealExists(v.id, d.label, d.context)) continue;
+      const key = d.code ?? d.url ?? `${d.label}|${d.context}`;
+      const seen = batchKeys.has(key) || db.dealSeenForChannel(channelName, d.code, d.url, d.context);
+      batchKeys.add(key);
       const saved = db.addDeal({
         videoId: v.id,
         videoTitle: v.title,
@@ -410,11 +445,15 @@ export async function scanChannelAndSave(
         expiryText: d.expiryText,
       });
       freshDeals.push(saved);
+      if (!seen && (!d.expiresAt || new Date(d.expiresAt).getTime() > Date.now())) toText.push(saved);
     }
   }
 
-  if (freshDeals.length > 0) {
-    await notifyMissedDeals(freshDeals, channelName);
+  // ponytail: deals vanish from history while Twilio is failing; a `notified` column is the upgrade.
+  // Un-save them so dealExists doesn't block the next scan from retrying the text.
+  if (toText.length > 0 && !(await notifyMissedDeals(toText, channelName))) {
+    for (const d of freshDeals) db.removeDeal(d.id);
+    return { videos: scanned, newDeals: 0 };
   }
 
   return { videos: scanned, newDeals: freshDeals.length };

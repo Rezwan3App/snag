@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { detectDeals, fetchRssXml } from "./scanner";
-import { normalizePhone, maskPhone, buildDealSms } from "./notify";
+import { detectDeals, fetchRssXml, scanChannelAndSave } from "./scanner";
+import { db } from "./db";
+import { normalizePhone, maskPhone, buildDealSms, sendSms } from "./notify";
 
 describe("detectDeals", () => {
   test("finds a promo code", () => {
@@ -126,6 +127,55 @@ describe("detectDeals", () => {
     expect(deals.length).toBeGreaterThan(0);
     expect(deals[0].url).toBe("https://www.bestbuy.com/discover");
   });
+
+  test("finds the expiry even when 'by' appears much earlier in the description", () => {
+    const deals = detectDeals(
+      "Sponsored by Squarespace, the all-in-one platform for building a website from scratch. Use code LTT for 10% off. Offer ends December 25, 2026.",
+    );
+    expect(deals.find((d) => d.code === "LTT")?.expiresAt).toContain("2026-12-25");
+  });
+
+  test("a partner-list link can't carry quotes or tags into the deal URL", () => {
+    const deals = detectDeals('Channel Partners:\nAcme - great stuff: https://acme.com/x"><svg/onload=alert(1)>\n');
+    for (const d of deals) expect(d.url ?? "").not.toMatch(/["'<>]/);
+  });
+});
+
+describe("detectDeals fixes", () => {
+  test("lowercase word after 'code' is not a promo code", () => {
+    expect(detectDeals("Use code below for 10% off").some((d) => d.code === "BELOW")).toBe(false);
+  });
+  test("'Use code: SAVE20' matches", () => {
+    expect(detectDeals("Use code: SAVE20 for 20% off").some((d) => d.code === "SAVE20")).toBe(true);
+  });
+  test("'code SAVE20 at checkout' matches", () => {
+    expect(detectDeals("Grab it, code SAVE20 at checkout").some((d) => d.code === "SAVE20")).toBe(true);
+  });
+  test("impossible date is not rolled into the next month", () => {
+    const deals = detectDeals("Use code SAVE20 for 20% off. Offer ends Feb 30");
+    expect(deals.every((d) => d.expiresAt === null)).toBe(true);
+  });
+  test("'friends' alone does not set an expiry", () => {
+    const deals = detectDeals("Use code SAVE20 for 20% off, tell your friends");
+    expect(deals.every((d) => d.expiresAt === null)).toBe(true);
+  });
+});
+
+describe("fetchRssXml", () => {
+  test("rejects a malformed channel id without making a request", async () => {
+    const realFetch = globalThis.fetch;
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls++;
+      return new Response("", { status: 200 });
+    }) as unknown as typeof fetch;
+    try {
+      await expect(fetchRssXml("abc&x=1")).rejects.toThrow(/Invalid channel id/);
+      expect(calls).toBe(0);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
 });
 
 describe("fetchRssXml retry", () => {
@@ -135,9 +185,9 @@ describe("fetchRssXml retry", () => {
     globalThis.fetch = (async () => {
       calls++;
       return calls < 3 ? new Response("", { status: 404 }) : new Response("<feed></feed>", { status: 200 });
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
     try {
-      const xml = await fetchRssXml("UCtest", { attempts: 6, baseDelayMs: 5 });
+      const xml = await fetchRssXml("UCXuqSBlHAE6Xw-yeJA0Tunw", { attempts: 6, baseDelayMs: 5 });
       expect(xml).toBe("<feed></feed>");
       expect(calls).toBe(3);
     } finally {
@@ -151,9 +201,9 @@ describe("fetchRssXml retry", () => {
     globalThis.fetch = (async () => {
       calls++;
       return new Response("", { status: 404 });
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
     try {
-      await expect(fetchRssXml("UCtest", { attempts: 3, baseDelayMs: 5 })).rejects.toThrow(/Could not load/);
+      await expect(fetchRssXml("UCXuqSBlHAE6Xw-yeJA0Tunw", { attempts: 3, baseDelayMs: 5 })).rejects.toThrow(/Could not load/);
       expect(calls).toBe(3);
     } finally {
       globalThis.fetch = realFetch;
@@ -186,5 +236,109 @@ describe("buildDealSms", () => {
 
   test("returns empty string for no deals", () => {
     expect(buildDealSms([])).toBe("");
+  });
+});
+
+describe("sendSms", () => {
+  test("stops sending real texts after the hourly cap", async () => {
+    const realFetch = globalThis.fetch;
+    const realEnv = { ...process.env };
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls++;
+      return new Response("{}", { status: 201 });
+    }) as unknown as typeof fetch;
+    Object.assign(process.env, { TWILIO_ACCOUNT_SID: "AC_test", TWILIO_AUTH_TOKEN: "t", TWILIO_FROM_NUMBER: "+15550000000" });
+    try {
+      for (let i = 0; i < 20; i++) expect((await sendSms("+14155552671", "hi")).ok).toBe(true);
+      const blocked = await sendSms("+14155552671", "hi");
+      expect(blocked.ok).toBe(false);
+      expect(blocked.error).toMatch(/limit/);
+      expect(calls).toBe(20);
+    } finally {
+      globalThis.fetch = realFetch;
+      process.env = realEnv;
+    }
+  });
+
+  test("truncates the body to Twilio's 1600 char limit", async () => {
+    const realFetch = globalThis.fetch;
+    const realEnv = { ...process.env };
+    let sent = "";
+    globalThis.fetch = (async (_u: string, init: any) => {
+      sent = new URLSearchParams(init.body).get("Body")!;
+      return new Response("{}", { status: 201 });
+    }) as unknown as typeof fetch;
+    Object.assign(process.env, { TWILIO_ACCOUNT_SID: "AC_test", TWILIO_AUTH_TOKEN: "t", TWILIO_FROM_NUMBER: "+15550000000", SMS_MAX_PER_HOUR: "1000" });
+    try {
+      await sendSms("+14155552671", "x".repeat(3000));
+      expect(sent.length).toBe(1600);
+    } finally {
+      globalThis.fetch = realFetch;
+      process.env = realEnv;
+    }
+  });
+});
+
+describe("scanChannelAndSave texting", () => {
+  // Shared singleton db; server.test.ts (runs last) closes and deletes it.
+  process.env.SNAG_DB_PATH ??= `./snag.shared.test.${process.pid}.db`;
+
+  const CH = "UCXuqSBlHAE6Xw-yeJA0Tunw";
+  const entry = (id: string, desc: string) =>
+    `<entry><yt:videoId>${id}</yt:videoId><title>T ${id}</title><media:description>${desc}</media:description><published>2026-01-01T00:00:00Z</published></entry>`;
+  const feed = (...entries: string[]) => `<feed><title>Chan</title>${entries.join("")}</feed>`;
+
+  // Mocks YouTube RSS and Twilio; returns the bodies of texts sent.
+  async function run(xml: string, twilioStatus = 201) {
+    const realFetch = globalThis.fetch;
+    const realEnv = { ...process.env };
+    const texts: string[] = [];
+    globalThis.fetch = (async (url: string, init?: any) => {
+      if (String(url).includes("twilio.com")) {
+        texts.push(new URLSearchParams(init.body).get("Body")!);
+        return new Response("{}", { status: twilioStatus });
+      }
+      return new Response(xml, { status: 200 });
+    }) as unknown as typeof fetch;
+    Object.assign(process.env, { TWILIO_ACCOUNT_SID: "AC_t", TWILIO_AUTH_TOKEN: "t", TWILIO_FROM_NUMBER: "+15550000000", SMS_MAX_PER_HOUR: "1000" });
+    try {
+      const result = await scanChannelAndSave(CH, "Chan", 5);
+      return { result, texts };
+    } finally {
+      globalThis.fetch = realFetch;
+      process.env = realEnv;
+    }
+  }
+
+  const partners = "Check out our Channel Partners:\nPIA - VPN: https://www.piavpn.com/ltt\n";
+
+  test("same sponsor list on several videos and later uploads is texted once, but all saved", async () => {
+    db.setSubscriber("+14155552671");
+    const first = await run(feed(entry("a1", partners), entry("a2", partners), entry("a3", partners)));
+    expect(first.texts.length).toBe(1);
+    expect(first.result.newDeals).toBe(3);
+
+    const second = await run(feed(entry("a4", partners), entry("a1", partners)));
+    expect(second.texts.length).toBe(0);
+    expect(second.result.newDeals).toBe(1);
+  });
+
+  test("expired deals are saved but not texted", async () => {
+    const { texts, result } = await run(feed(entry("b1", "Use code OLDONE for 10% off. Offer ends January 1, 2020.")));
+    expect(texts.length).toBe(0);
+    expect(result.newDeals).toBeGreaterThan(0);
+  });
+
+  test("a failed text un-saves the deals so the next scan retries", async () => {
+    const xml = feed(entry("c1", "Use code RETRY1 for 10% off"));
+    const failed = await run(xml, 500);
+    expect(failed.texts.length).toBe(1);
+    expect(failed.result.newDeals).toBe(0);
+    expect(db.getDeals().some((d) => d.code === "RETRY1")).toBe(false);
+
+    const retry = await run(xml);
+    expect(retry.texts.length).toBe(1);
+    expect(retry.texts[0]).toContain("RETRY1");
   });
 });
