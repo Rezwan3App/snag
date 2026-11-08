@@ -43,7 +43,7 @@ describe("detectDeals", () => {
   });
 
   test("parses an expiry date near a trigger word", () => {
-    const deals = detectDeals("Use code SUMMER for 20% off — offer ends December 25, 2026.");
+    const deals = detectDeals("Use code SUMMER for 20% off. Offer ends December 25, 2026.");
     const withExpiry = deals.find((d) => d.expiresAt);
     expect(withExpiry?.expiresAt).toContain("2026-12-25");
   });
@@ -92,7 +92,7 @@ describe("detectDeals", () => {
   });
 
   test("does not double-count a sponsor mention that also has an explicit code", () => {
-    const desc = "Sponsored by Squarespace — use code WAN for 10% off at https://squarespace.com/WAN";
+    const desc = "Sponsored by Squarespace. Use code WAN for 10% off at https://squarespace.com/WAN";
     const deals = detectDeals(desc);
     expect(deals.length).toBe(1);
     expect(deals[0].code).toBe("WAN");
@@ -100,7 +100,7 @@ describe("detectDeals", () => {
 
   test("real LTT description: a 'Channel Partners' link list with no per-line sponsor keyword", () => {
     // The per-video sponsor mention here ("using our link", no "sponsor"
-    // keyword) is a harder case we don't chase — but every LTT video also
+    // keyword) is a harder case we don't chase - but every LTT video also
     // carries this evergreen partners block, which is worth surfacing.
     const desc = [
       "Secure your business with ThreatLocker today using our link: https://www.threatlocker.com/ltt",

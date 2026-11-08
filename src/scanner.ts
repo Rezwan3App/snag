@@ -32,7 +32,7 @@ export const isChannelId = (id: unknown): id is string => typeof id === "string"
 
 const FETCH_TIMEOUT_MS = 10_000;
 
-// ── Channel search (works from cloud — no IP block) ──────────────────────────
+// ── Channel search (works from cloud - no IP block) ──────────────────────────
 
 export function parseSubscriberCount(text: string): number {
   const m = text.match(/([\d.,]+)\s*([KMB])?/i);
@@ -106,7 +106,7 @@ const PROMO_RULES: { pattern: RegExp; label: string }[] = [
   { pattern: /giveaway\b/gi, label: "Giveaway" },
   { pattern: /limited\s+time\s+(?:offer|deal)\b/gi, label: "Limited offer" },
   { pattern: /exclusive\s+(?:deal|discount|offer)\b/gi, label: "Exclusive deal" },
-  // Plain sponsor mentions carry no code/discount language at all — the most
+  // Plain sponsor mentions carry no code/discount language at all - the most
   // common real-world sponsor read ("thanks to X for sponsoring, check them
   // out at [link]"). Only counts as a deal if a nearby link resolves (below).
   {
@@ -158,7 +158,7 @@ function findDealUrl(description: string, nearIndex?: number): string | null {
 
 // Many channels list their ongoing affiliate deals under a "Channel
 // Partners"/"Our Sponsors" header as one "Name - blurb: link" line each, with
-// no per-line "sponsor" keyword to match on — so PROMO_RULES misses them
+// no per-line "sponsor" keyword to match on - so PROMO_RULES misses them
 // entirely. Parse that block directly instead.
 const PARTNER_HEADER_RE = /(?:channel\s+partners|our\s+sponsors)\s*:?\s*\n/i;
 const PARTNER_LINE_RE = /^\s*([A-Za-z][\w&'".\- ]{0,30}?)\s*[-–:]\s*.*?(https?:\/\/[^\s"'<>]+?)[).,]*\s*$/;
@@ -355,7 +355,7 @@ export async function fetchRssXml(
       xml = await res.text();
       break;
     }
-    // YouTube's RSS endpoint intermittently 404s/429s on valid channels — back
+    // YouTube's RSS endpoint intermittently 404s/429s on valid channels - back
     // off (with jitter, so concurrent scans don't retry in lockstep) and retry.
     if (attempt < attempts - 1) {
       const delay = baseDelayMs * (attempt + 1) + Math.random() * baseDelayMs;

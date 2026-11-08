@@ -72,7 +72,7 @@ app.get("/api/channel/:id/preview", async (c) => {
 
 // ── API: Homepage "spotlight" strip ───────────────────────────────────────────
 // A fixed set of well-known channels (the same names already in the search
-// chips), scanned read-only — no DB writes, no SMS — so a first-time visitor
+// chips), scanned read-only - no DB writes, no SMS - so a first-time visitor
 // sees Snag actually finding real deals instead of an empty search box.
 // Cached briefly so a burst of visitors doesn't hammer YouTube's RSS feed.
 const SPOTLIGHT_CHANNELS = [
@@ -138,7 +138,7 @@ async function loadSpotlightDeals(): Promise<SpotlightDeal[]> {
   );
 
   // Same evergreen sponsor block repeats across a channel's last few videos
-  // (e.g. LTT's "Channel Partners" list) — dedupe by (channel, link) and cap
+  // (e.g. LTT's "Channel Partners" list) - dedupe by (channel, link) and cap
   // per channel so the strip shows variety across creators, not one channel's
   // sponsor list three times over.
   const sorted = perChannel.flat().sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
@@ -193,7 +193,7 @@ app.post("/api/channels", async (c) => {
 
   // Scan + text deals now, so the response can report how many were found
   // (the frontend reads `newDeals` to show "texted you N deals" vs. "you'll
-  // get a text later" — silently wrong without this).
+  // get a text later" - silently wrong without this).
   const { newDeals } = await scanChannelAndSave(id, chName, 5).catch((e) => {
     console.error(e);
     return { videos: [], newDeals: 0 };
@@ -239,7 +239,7 @@ app.post("/api/sms/subscribe", async (c) => {
   db.setSubscriber(normalized);
 
   const welcome =
-    "🎯 You're set on Snag. We'll text you the promo codes & deals buried in new videos from the channels you follow — so you never have to sit through the sponsor read again.";
+    "🎯 You're set on Snag. We'll text you the promo codes & deals buried in new videos from the channels you follow, so you never have to sit through the sponsor read again.";
   const result = await sendSms(normalized, welcome);
   db.addNotification({
     phone: normalized,
@@ -285,7 +285,7 @@ app.post("/api/sms/test", async (c) => {
     );
   } else {
     body =
-      '🎯 Sample Snag alert: "Use code LTT for 10% off your order" — link in description. Real alerts arrive automatically when channels you follow drop new videos.';
+      '🎯 Sample Snag alert: "Use code LTT for 10% off your order". Link in description. Real alerts arrive automatically when channels you follow drop new videos.';
   }
 
   const result = await sendSms(sub.phone, body);
