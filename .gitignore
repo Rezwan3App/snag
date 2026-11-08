@@ -7,3 +7,6 @@ snag.db
 snag.db-shm
 snag.db-wal
 bun.lock
+.DS_Store
+.claude/
+.impeccable/

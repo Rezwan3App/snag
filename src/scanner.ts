@@ -437,8 +437,6 @@ export async function scanChannelAndSave(
   const batchKeys = new Set<string>();
 
   for (const v of scanned) {
-    db.markVideoScanned(v.id);
-
     for (const d of v.deals) {
       if (db.dealExists(v.id, d.label, d.context)) continue;
       const key = d.code ?? d.url ?? `${d.label}|${d.context}`;

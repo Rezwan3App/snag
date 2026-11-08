@@ -105,15 +105,6 @@ describe("deals", () => {
   });
 });
 
-describe("scanned videos", () => {
-  test("markVideoScanned then isVideoScanned is true, others stay false", () => {
-    const db = freshDb();
-    db.markVideoScanned("v1");
-    expect(db.isVideoScanned("v1")).toBe(true);
-    expect(db.isVideoScanned("v2")).toBe(false);
-  });
-});
-
 describe("subscriber", () => {
   test("setSubscriber then getSubscriber returns an enabled subscriber", () => {
     const db = freshDb();

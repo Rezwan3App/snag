@@ -63,9 +63,6 @@ const SCHEMA = `
     expiryText TEXT,
     detectedAt TEXT NOT NULL
   );
-  CREATE TABLE IF NOT EXISTS scanned_videos (
-    videoId TEXT PRIMARY KEY
-  );
   CREATE TABLE IF NOT EXISTS subscriber (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     phone TEXT NOT NULL,
@@ -160,13 +157,6 @@ export function createDb(path: string) {
 
     removeDeal: (id: number) => {
       conn.query("DELETE FROM deals WHERE id = ?").run(id);
-    },
-
-    isVideoScanned: (videoId: string): boolean =>
-      !!conn.query("SELECT 1 FROM scanned_videos WHERE videoId = ?").get(videoId),
-
-    markVideoScanned: (videoId: string) => {
-      conn.query("INSERT OR IGNORE INTO scanned_videos (videoId) VALUES (?)").run(videoId);
     },
 
     // ── Subscriber (single user for MVP) ──────────────────────────────────

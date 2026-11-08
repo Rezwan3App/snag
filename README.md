@@ -6,11 +6,12 @@ Find the promo codes and deals buried in YouTube video descriptions, without wat
 
 ![Snag homepage](docs/screenshot.png)
 
-**Contents:** [Architecture](#architecture) · [How a video becomes a text](#how-a-video-becomes-a-text) · [API](#api) · [Configuration](#configuration) · [Security](#security) · [Testing](#testing) · [Deploying](#deploying)
+**Contents:** [Screenshots](#screenshots) · [Run it locally](#run-it-locally) · [Architecture](#architecture) · [How a video becomes a text](#how-a-video-becomes-a-text) · [API](#api) · [Configuration](#configuration) · [Security](#security) · [Testing](#testing) · [Deploying](#deploying) · [Why not serverless](#why-not-serverless-vercel)
 
 ## What it does
 
 - **Search a YouTuber.** Type a name and pick the channel from the results.
+- **See live catches.** The homepage shows a still strip of recent deals from a fixed set of well-known channels, so you can see the output before searching.
 - **Preview before you commit.** See the deals found in the channel's last 5 videos: codes, sponsor links, and expiry dates.
 - **Watch a channel and get texted.** Save a phone number and Snag texts you when a scan finds a new deal on a channel you watch. It re-scans every 30 minutes by default.
 - **Browse deal history.** Every saved deal shows its video, code, and link. Expired deals are marked and can be filtered out.
@@ -88,9 +89,11 @@ src/
   *.test.ts        Tests for db, scanner and server
 public/
   index.html       The whole frontend: HTML, CSS and vanilla JS
-docs/
-  screenshot.png   Image used in this README
+docs/              Screenshots and the how-it-works image used in this README
 render.yaml        Render deploy config
+package.json       Scripts and dependencies (hono, @types/bun)
+tsconfig.json      TypeScript settings
+.gitignore         Ignores node_modules, .env, local SQLite files and logs
 ```
 
 ### Design decisions
@@ -204,7 +207,7 @@ bun test
 
 There are three test files in `src/`:
 
-- `db.test.ts` covers the SQLite layer: channels, deals, scanned videos, the subscriber, notifications, and persistence across reopened files.
+- `db.test.ts` covers the SQLite layer: channels, deals, the subscriber, notifications, and persistence across reopened files.
 - `scanner.test.ts` covers deal detection, RSS fetching with retries, phone normalizing and masking, SMS text and sending, texting after a scan, subscriber-count parsing, and channel search ranking.
 - `server.test.ts` covers the admin token: GET requests pass, and non-GET requests need the right bearer token.
 
