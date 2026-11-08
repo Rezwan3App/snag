@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <title>Snag - Never miss a creator deal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -266,7 +266,7 @@
   .cta-form{display:flex;gap:10px;flex-wrap:wrap}
   .cta-input{
     flex:1;min-width:200px;border:1.5px solid var(--line2);border-radius:var(--r-sm);
-    padding:13px 15px;font-family:inherit;font-size:15px;font-weight:500;outline:none;background:var(--panel);transition:.15s;
+    padding:13px 15px;font-family:inherit;font-size:16px;font-weight:500;outline:none;background:var(--panel);transition:.15s;
   }
   .cta-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .btn{
@@ -396,12 +396,21 @@
 
   /* TOAST */
   .toast{
-    position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(16px);
+    position:fixed;bottom:calc(26px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(16px);
     background:var(--ink);color:#fff;border-radius:var(--r-sm);padding:13px 22px;
     font-size:14px;font-weight:600;box-shadow:var(--shadow);z-index:9999;opacity:0;pointer-events:none;
     transition:transform .3s var(--ease),opacity .25s var(--ease);
   }
   .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+  /* ── mobile layout fixes ── */
+  .hist-deal-text{overflow-wrap:anywhere;min-width:0}
+  .panel-head{flex-wrap:wrap;gap:10px}
+  .hist-tools{margin-left:auto}
+  .sub-status{flex-wrap:wrap}
+  @media(max-width:360px){nav{padding:0 16px;gap:8px}.nav-link{white-space:nowrap;padding:8px 8px}}
+  @media(max-width:480px){.cta-form .btn{flex-basis:100%}}
+  @media(pointer:coarse){.ticker{overflow-x:auto;-webkit-mask-image:none;mask-image:none}.ticker-track{animation:none}.ticker-copy[aria-hidden]{display:none}}
 
   .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle}
   .btn-ghost .spin,.status .spin{border-color:rgba(193,80,31,.3);border-top-color:var(--accent)}
@@ -426,7 +435,7 @@
   <div class="search-wrap">
     <div class="search-box">
       <span class="search-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><path d="M14 14l-3.2-3.2"/></svg></span>
-      <input class="search-input" id="searchInput" aria-label="Search YouTube channels" type="text" placeholder="Search a YouTuber, e.g. MKBHD, Linus Tech Tips…" autocomplete="off"/>
+      <input class="search-input" id="searchInput" aria-label="Search YouTube channels" type="text" placeholder="Search a YouTuber" autocomplete="off"/>
       <button class="search-btn" id="searchBtn">Search</button>
     </div>
     <div class="chip-row">
@@ -680,7 +689,7 @@ function renderPreview(videos){
         <div class="cta-title">${ICON_PHONE} Get ${escapeHtml(c.name)}'s deals texted to you</div>
         <div class="cta-sub">We'll watch this channel and text you new promo codes automatically, so you never miss one again.</div>
         <div class="cta-form">
-          <input class="cta-input" id="ctaPhone" aria-label="Phone number for deal texts" type="tel" placeholder="${subscriberPhone?'Already subscribed':'Your phone number'}" ${subscriberPhone?'disabled':''} value="${escapeHtml(subscriberPhone)}"/>
+          <input class="cta-input" id="ctaPhone" aria-label="Phone number for deal texts" type="tel" name="phone" autocomplete="tel" inputmode="tel" placeholder="${subscriberPhone?'Already subscribed':'Your phone number'}" ${subscriberPhone?'disabled':''} value="${escapeHtml(subscriberPhone)}"/>
           <button class="btn btn-primary" id="ctaBtn">${isWatched?ICON_CHECK+' Watching':'Watch & text me deals'}</button>
         </div>
         <div class="cta-note">${ICON_LOCK} No spam. Reply STOP anytime.</div>
