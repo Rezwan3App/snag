@@ -202,7 +202,9 @@
     padding:5px 12px;font-size:13px;font-weight:700;flex-shrink:0;
   }
 
+  .preview-count.is-zero{background:var(--bg);color:var(--muted)}
   .vids{padding:8px 0}
+  .vids-empty{padding:20px 24px;font-size:14px;color:var(--muted)}
   .vid{
     display:flex;gap:14px;padding:16px 24px;border-bottom:1px solid var(--line);
   }
@@ -277,6 +279,7 @@
   .btn-primary{background:var(--accent);color:#fff}
   .btn-primary:hover{background:var(--accent-dark)}
   .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+  .btn-primary.is-watching,.btn-primary.is-watching:disabled{background:transparent;color:var(--good-dark);border:1.5px solid var(--good);opacity:1;cursor:default}
   .btn-ghost{background:var(--panel);color:var(--ink2);border:1.5px solid var(--line2)}
   .btn-ghost:hover{border-color:var(--accent);color:var(--accent-dark)}
   .cta-note{font-size:12px;color:var(--muted);margin-top:12px;display:flex;align-items:center;gap:6px}
@@ -575,6 +578,7 @@ let searchSeq=0,previewSeq=0;
 async function doSearch(q){
   if(!q)return;
   const my=++searchSeq;
+  if(q.length<2){const p=$("resultsPop");p.classList.add("show");p.innerHTML=`<div class="res-head">Type at least 2 letters.</div>`;return;}
   const btn=$("searchBtn");btn.disabled=true;btn.innerHTML=sp();
   const pop=$("resultsPop");
   pop.classList.add("show");
@@ -601,7 +605,7 @@ async function doSearch(q){
         });
       });
     }
-  }catch(e){if(my!==searchSeq)return;pop.innerHTML=`<div class="res-head">Search failed. Try again.</div>`;}
+  }catch(e){if(my!==searchSeq)return;pop.innerHTML=`<div class="res-head">Search failed. Check your connection and try again.</div>`;}
   btn.disabled=false;btn.textContent="Search";
 }
 
@@ -644,7 +648,7 @@ function renderPreview(videos){
   const c=currentChannel;
   const avatar=c.avatar&&c.avatar!=="undefined"?`<img class="preview-avatar" src="${escapeHtml(c.avatar)}" onerror="this.style.visibility='hidden'"/>`:"";
 
-  const vidsHtml=videos.map((v,i)=>{
+  const vidsHtml=totalDeals===0?`<div class="vids-empty">No deals in the last ${videos.length||5} videos. Watch this channel and we'll text you when one shows up.</div>`:videos.map((v,i)=>{
     const deals=v.deals.map(d=>{
       const codePart=d.code?`${codeChip(d.code)} `:"";
       const linkPart=d.url?` <a class="deal-link" href="${escapeHtml(safeUrl(d.url))}" target="_blank" rel="noreferrer">${escapeHtml(d.url.replace(/^https?:\/\//,""))}</a>`:"";
@@ -673,7 +677,7 @@ function renderPreview(videos){
           <div class="preview-name">${escapeHtml(c.name)}</div>
           <div class="preview-stat">Last ${videos.length} videos scanned</div>
         </div>
-        <span class="preview-count">${totalDeals} deal${totalDeals!==1?"s":""}</span>
+        <span class="preview-count${totalDeals===0?" is-zero":""}">${totalDeals} deal${totalDeals!==1?"s":""}</span>
       </div>
       <div class="vids">${vidsHtml}</div>
       <div class="preview-cta">
@@ -681,15 +685,14 @@ function renderPreview(videos){
         <div class="cta-sub">We'll watch this channel and text you new promo codes automatically, so you never miss one again.</div>
         <div class="cta-form">
           <input class="cta-input" id="ctaPhone" aria-label="Phone number for deal texts" type="tel" placeholder="${subscriberPhone?'Already subscribed':'Your phone number'}" ${subscriberPhone?'disabled':''} value="${escapeHtml(subscriberPhone)}"/>
-          <button class="btn btn-primary" id="ctaBtn">${isWatched?ICON_CHECK+' Watching':'Watch & text me deals'}</button>
+          <button class="btn btn-primary${isWatched?' is-watching':''}" id="ctaBtn"${isWatched?' disabled aria-disabled="true"':''}>${isWatched?ICON_CHECK+' Watching':'Watch & text me deals'}</button>
         </div>
-        <div class="cta-note">${ICON_LOCK} No spam. Reply STOP anytime.</div>
+        <div class="cta-note">${ICON_LOCK} We text only when a channel you watch posts a new deal, usually a few a week at most. Free from Snag; carrier rates may apply. Reply STOP or turn alerts off here anytime.</div>
         <div class="status" id="ctaStatus" role="status" aria-live="polite"></div>
       </div>
     </div>`;
 
   $("ctaBtn").addEventListener("click",subscribeAndWatch);
-  if(isWatched)$("ctaBtn").disabled=true;
 }
 
 // Channel names, titles, and links all come from YouTube (anyone can name a
@@ -762,6 +765,7 @@ document.addEventListener("click",e=>{
 // ── subscribe + watch ──
 let watchedIds=new Set();
 let subscriberPhone=null;
+let smsLive=false;
 
 async function subscribeAndWatch(){
   const c=currentChannel;
@@ -781,7 +785,7 @@ async function subscribeAndWatch(){
   if(!subscriberPhone&&phone){
     try{
       const r=await api("/api/sms/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone})});
-      subscriberPhone=r.phoneMasked;subscribed=true;
+      smsLive=r.mode!=="demo";subscriberPhone=r.phoneMasked;subscribed=true;
       if(r.mode==="demo")$("demoBadge").style.display="inline-block";
     }catch(e){return fail(e)}
   }
@@ -792,9 +796,9 @@ async function subscribeAndWatch(){
   catch(e){if(subscribed)loadSub();return fail(e)}
 
   watchedIds.add(c.id);
-  btn.innerHTML=`${ICON_CHECK} Watching`;
-  const dealsTexted=w.newDeals||0;
-  setStatus("ctaStatus",`${ICON_CHECK_SM} Watching ${escapeHtml(c.name)}.${dealsTexted>0?`Texted you ${dealsTexted} deal${dealsTexted>1?"s":""} we found.`:"You'll get a text when a new deal drops."}`,"ok");
+  btn.innerHTML=`${ICON_CHECK} Watching`;btn.classList.add("is-watching");btn.setAttribute("aria-disabled","true");
+  const n=w.newDeals||0,dl=`${n} deal${n>1?"s":""}`;
+  setStatus("ctaStatus",`${ICON_CHECK_SM} Watching ${escapeHtml(c.name)}. ${n>0?(smsLive?`Texted you ${dl}.`:`Found ${dl}; they're saved below. Demo mode: no texts are sent yet.`):"You'll get a text when a new deal drops."}`,"ok");
   toast(`Now watching ${c.name}`);
   loadWatched();loadSub();loadHistory();
 }
@@ -802,7 +806,7 @@ async function subscribeAndWatch(){
 // ── watched list ──
 async function loadWatched(){
   let chs;
-  try{chs=await api("/api/channels")}catch(e){$("watchedList").innerHTML=`<div class="empty-mini">Couldn't load your channels. ${escapeHtml(e.message)}</div>`;return}
+  try{chs=await api("/api/channels")}catch(e){$("watchedList").innerHTML=`<div class="empty-mini">Couldn't load your channels. Refresh to try again.</div>`;return}
   watchedIds=new Set(chs.map(c=>c.id));
   const el=$("watchedList");
   if(!chs.length){el.innerHTML=`<div class="empty-mini">Search a creator above and tap "Watch & text me deals" to start.</div>`;return;}
@@ -820,8 +824,8 @@ async function loadWatched(){
     let r;
     try{r=await api(`/api/channels/${encodeURIComponent(b.dataset.id)}/scan`,{method:"POST"})}catch(e){r={error:e.message}}
     b.disabled=false;b.innerHTML=ICON_REFRESH;
-    if(r.error)toast(`Error: ${r.error}`);
-    else {toast(r.newDeals>0?`Texted you ${r.newDeals} new deal${r.newDeals>1?"s":""} from ${b.dataset.name}`:`No new deals from ${b.dataset.name} yet`);loadHistory();}
+    if(r.error)toast("Couldn't check for new deals. Try again.");
+    else {toast(r.newDeals>0?(smsLive?`Texted you ${r.newDeals} new deal${r.newDeals>1?"s":""} from ${b.dataset.name}`:`Found ${r.newDeals} new deal${r.newDeals>1?"s":""} from ${b.dataset.name}, saved below. Demo mode: no texts sent.`):`No new deals from ${b.dataset.name} yet`);loadHistory();}
   }));
   el.querySelectorAll(".remove").forEach(b=>b.addEventListener("click",async()=>{
     try{await api(`/api/channels/${encodeURIComponent(b.dataset.id)}`,{method:"DELETE"});loadWatched()}catch(e){toast(`Error: ${e.message}`)}
@@ -832,6 +836,7 @@ async function loadWatched(){
 async function loadSub(){
   let s;
   try{s=await api("/api/sms")}catch(e){toast("Couldn't load your alert settings");return}
+  smsLive=!!s.smsConfigured;
   if(s.subscribed){
     subscriberPhone=s.phoneMasked;
     $("subPanel").style.display="block";
@@ -959,7 +964,7 @@ $("clearHistBtn")?.addEventListener("click",async()=>{
 });
 
 async function loadHistory(){
-  try{allDeals=await api("/api/deals")}catch(e){$("histList").innerHTML=`<div class="empty-mini">Couldn't load your deals. ${escapeHtml(e.message)}</div>`;return}
+  try{allDeals=await api("/api/deals")}catch(e){$("histList").innerHTML=`<div class="empty-mini">Couldn't load your deals. Refresh to try again.</div>`;return}
   renderHistory();
 }
 </script>
