@@ -340,6 +340,9 @@ describe("scanChannelAndSave texting", () => {
     const retry = await run(xml);
     expect(retry.texts.length).toBe(1);
     expect(retry.texts[0]).toContain("RETRY1");
+  });
+});
+
 describe("parseSubscriberCount", () => {
   test("parses suffixes and edge cases", () => {
     expect(parseSubscriberCount("21.4M subscribers")).toBe(21400000);
