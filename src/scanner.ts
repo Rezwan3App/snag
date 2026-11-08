@@ -34,6 +34,15 @@ const FETCH_TIMEOUT_MS = 10_000;
 
 // ── Channel search (works from cloud — no IP block) ──────────────────────────
 
+export function parseSubscriberCount(text: string): number {
+  const m = text.match(/([\d.,]+)\s*([KMB])?/i);
+  if (!m || !/subscribers?|^[\d.,]+\s*[KMB]?$/i.test(text.trim())) return 0;
+  const n = parseFloat(m[1].replace(/,/g, ""));
+  if (isNaN(n)) return 0;
+  const mult = { K: 1e3, M: 1e6, B: 1e9 }[(m[2] ?? "").toUpperCase() as "K" | "M" | "B"] ?? 1;
+  return Math.round(n * mult);
+}
+
 export async function searchChannels(query: string): Promise<ChannelSearchResult[]> {
   const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&sp=EgIQAg%253D%253D`;
   const res = await fetch(url, {
@@ -67,18 +76,21 @@ export async function searchChannels(query: string): Promise<ChannelSearchResult
       if (!ch) continue;
       const id = ch.channelId;
       const name = ch.title?.simpleText ?? "";
-      const subscribers =
-        ch.videoCountText?.simpleText ?? ch.subscriberCountText?.simpleText ?? "";
+      // YouTube puts the subscriber count in either field; the other holds the @handle
+      const texts: string[] = [ch.videoCountText?.simpleText, ch.subscriberCountText?.simpleText].filter(Boolean);
+      const subscribers = texts.find((t) => /subscribers?/i.test(t)) ?? texts[0] ?? "";
       const thumbs = ch.thumbnail?.thumbnails ?? [];
       let thumbnail = thumbs.length ? thumbs[thumbs.length - 1].url : "";
       if (thumbnail.startsWith("//")) thumbnail = "https:" + thumbnail;
       if (id && name) results.push({ id, name, subscribers, thumbnail });
-      if (results.length >= 6) break;
     }
-    if (results.length >= 6) break;
   }
 
-  return results;
+  // Rank by subscribers; hide tiny impostors when a famous channel is present
+  const count = (r: ChannelSearchResult) => parseSubscriberCount(r.subscribers);
+  results.sort((a, b) => count(b) - count(a));
+  const famous = results.some((r) => count(r) >= 100000);
+  return results.filter((r) => !famous || count(r) >= 1000).slice(0, 6);
 }
 
 // ── Promo detection (from video descriptions via RSS) ────────────────────────
