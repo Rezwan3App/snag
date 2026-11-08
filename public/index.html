@@ -405,26 +405,50 @@
   .sub-info{flex:1 1 180px;font-size:15px;color:var(--ink2)}
   .sub-info b{font-family:var(--mono);font-weight:600;color:var(--ink)}
 
+  /* history: a stack of saved receipts, one per video, torn apart at notched seams */
   .hist-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto}
   .hist-filter{display:inline-flex;border:1.5px solid var(--ink)}
-  .hist-tab{border:none;background:none;cursor:pointer;font-size:13px;font-weight:700;color:var(--ink2);padding:6px 12px;transition:background .12s,color .12s}
+  .hist-tab,#clearHistBtn{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.02em}
+  .hist-tab{border:none;background:none;cursor:pointer;color:var(--ink2);padding:6px 12px;transition:background .12s,color .12s}
+  .hist-tab:hover{color:var(--ink);background:var(--sheet)}
   .hist-tab+.hist-tab{border-left:1.5px solid var(--ink)}
   .hist-tab.active{background:var(--ink);color:var(--sheet)}
-  .hist-list{display:flex;flex-direction:column;border-top:1px dashed var(--rule)}
-  .hist-group{padding:16px 0;border-bottom:1px dashed var(--rule)}
-  .hist-group-head{display:flex;align-items:baseline;gap:4px 10px;flex-wrap:wrap;margin-bottom:10px}
-  .hist-group-chan{font-size:14px;font-weight:800;display:flex;align-items:center;gap:6px;flex-shrink:0}
-  .hist-group-chan svg{color:var(--muted)}
-  .hist-group-vid,.hist-group-vid:visited{flex:1;min-width:120px;font-size:14px;color:var(--ink2);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #clearHistBtn{padding:6px 12px;border-width:1.5px}
+  .hist-list{display:flex;flex-direction:column;filter:drop-shadow(0 10px 16px rgba(20,25,32,.10))}
+  .hist-list>.empty-mini{background:var(--sheet);padding:18px 22px}
+  #histList .hist-group{
+    --n:9px;background:var(--sheet);padding:18px 22px 20px;
+    -webkit-mask:
+      radial-gradient(circle at 0 0,#0000 var(--n),#000 calc(var(--n) + .5px)) 0 0/51% 51% no-repeat,
+      radial-gradient(circle at 100% 0,#0000 var(--n),#000 calc(var(--n) + .5px)) 100% 0/51% 51% no-repeat,
+      radial-gradient(circle at 0 100%,#0000 var(--n),#000 calc(var(--n) + .5px)) 0 100%/51% 51% no-repeat,
+      radial-gradient(circle at 100% 100%,#0000 var(--n),#000 calc(var(--n) + .5px)) 100% 100%/51% 51% no-repeat;
+            mask:
+      radial-gradient(circle at 0 0,#0000 var(--n),#000 calc(var(--n) + .5px)) 0 0/51% 51% no-repeat,
+      radial-gradient(circle at 100% 0,#0000 var(--n),#000 calc(var(--n) + .5px)) 100% 0/51% 51% no-repeat,
+      radial-gradient(circle at 0 100%,#0000 var(--n),#000 calc(var(--n) + .5px)) 0 100%/51% 51% no-repeat,
+      radial-gradient(circle at 100% 100%,#0000 var(--n),#000 calc(var(--n) + .5px)) 100% 100%/51% 51% no-repeat;
+  }
+  #histList .hist-group+.hist-group{border-top:2px dashed var(--rule)}
+  .hist-group-head{padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--rule-soft)}
+  .hist-group-meta{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .hist-group-chan{color:var(--ink);font-weight:600;text-transform:uppercase;letter-spacing:.06em;min-width:0;overflow-wrap:anywhere}
+  .hist-group-time{white-space:nowrap}
+  .hist-group-vid,.hist-group-vid:visited{display:block;margin-top:6px;font-size:15px;font-weight:700;line-height:1.35;color:var(--ink);text-decoration:none;overflow-wrap:anywhere}
   .hist-group-vid:hover{color:var(--stamp);text-decoration:underline}
-  .hist-group-time{font-family:var(--mono);font-size:12px;color:var(--muted);flex-shrink:0;white-space:nowrap}
-  .hist-deals{display:flex;flex-direction:column;gap:10px}
-  .hist-deal-row{display:flex;align-items:flex-start;gap:10px}
-  .hist-deal-row .deal-badge{min-width:92px;padding-top:3px}
-  .hist-deal-text{flex:1;font-size:14px;color:var(--ink2);line-height:1.5;min-width:0;overflow-wrap:anywhere}
-  .hist-deal-row.is-expired .hist-deal-text{color:var(--muted)}
-  .hist-deal-row.is-expired .hist-deal-text,.hist-deal-row.is-expired .code-chip .txt{text-decoration:line-through}
-  .hist-del{flex-shrink:0;width:28px;height:28px;border-color:transparent}
+  .hist-deals{display:flex;flex-direction:column;gap:14px}
+  #histList .hist-li{display:flex;align-items:center;gap:10px;min-width:0}
+  #histList .hist-li>.code-chip,#histList .hist-li>.deal-link{flex:0 1 auto;min-width:0}
+  #histList .deal-link{white-space:normal;overflow-wrap:anywhere;overflow:visible;line-height:1.45}
+  .hist-deal-text{margin-top:6px;font-size:14px;color:var(--ink2);line-height:1.5;overflow-wrap:anywhere}
+  #histList .expiry{margin:6px 0 0;display:flex;width:max-content;max-width:100%;white-space:normal;border:1.5px solid currentColor;padding:2px 7px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  #histList .expiry.ok{color:var(--ink2)}
+  #histList .expiry.expired{text-decoration:line-through}
+  .hist-deal-row.is-expired .deal-badge,.hist-deal-row.is-expired .hist-deal-text{color:var(--muted)}
+  .hist-deal-row.is-expired .code-chip{border-color:var(--muted);color:var(--muted)}
+  .hist-deal-row.is-expired .code-chip .txt,.hist-deal-row.is-expired .deal-link{text-decoration:line-through}
+  .hist-deal-row.is-expired .deal-link{color:var(--muted)}
+  .hist-del{flex-shrink:0;width:28px;height:28px;margin-left:auto;border-color:transparent}
 
   footer{margin-top:40px;padding:22px max(32px,calc((100% - 1116px) / 2)) 40px;border-top:2px solid var(--ink);font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 24px;justify-content:space-between}
 
@@ -471,9 +495,8 @@
     .decode-desc{padding:20px 20px 36px;font-size:15px}
     .decode-out{margin:-12px 0 0 10px}
     .decode-out .rows,.decode-out .decode-label{padding-left:20px;padding-right:20px}
-    #histList .hist-deal-row{flex-wrap:wrap}
-    #histList .deal-badge{min-width:0;flex-basis:100%;padding-top:0}
-    #histList .hist-deal-text{flex:1 1 0}
+    #histList .hist-group{padding:16px 16px 18px}
+    .hist-list>.empty-mini{padding:16px}
     .decode-out .deal-badge{min-width:0}
   }
   @media(max-width:360px){
@@ -484,14 +507,16 @@
   @media (pointer:coarse){
     .icon-btn,.hist-del{width:44px;height:44px}
     .ex-chip{min-height:44px;padding-block:10px}
-    .hist-tab{min-height:44px;padding-inline:16px}
+    .hist-tab,#clearHistBtn{min-height:44px;padding-inline:16px}
+    .hist-del{margin-block:-8px}
     .nav-link{display:inline-flex;align-items:center;min-height:44px}
     .btn,.search-btn{min-height:44px}
     .brand{min-height:44px}
     .code-chip,.catch-link,.deal-link{position:relative;min-height:44px}
     .code-chip::after,.catch-link::after,.deal-link::after{content:"";position:absolute;inset:-6px -4px}
     .catch-link,.deal-link{line-height:44px}
-    .stub-vid a,.hist-group-vid{display:inline-block;padding-block:12px;margin-block:-12px}
+    .stub-vid a{display:inline-block;padding-block:12px;margin-block:-12px}
+    .hist-group-vid,.hist-group-vid:visited{padding-block:10px;margin-block:-4px -10px}
   }
 </style>
 </head>
@@ -1073,20 +1098,21 @@ function renderHistory(){
     const rows=g.deals.map(d=>{
       const code=d.code?codeChip(d.code):"";
       const exp=expiryPill(d.expiresAt,d.expiryText);
-      const link=d.dealUrl?`<a class="deal-link" href="${escapeHtml(safeUrl(d.dealUrl))}" target="_blank" rel="noreferrer">${escapeHtml(d.dealUrl.replace(/^https?:\/\//,""))}</a>`:"";
+      const link=d.dealUrl?`<a class="deal-link" href="${escapeHtml(safeUrl(d.dealUrl))}" target="_blank" rel="noreferrer">${escapeHtml(d.dealUrl.replace(/^https?:\/\//,"")).replace(/\//g,"/<wbr>")}</a>`:"";
       const expiredCls=dealIsExpired(d)?" is-expired":"";
       const ctx=(d.context||"").replace(/https?:\/\/\S+/g,"").replace(/\s+/g," ").replace(/[\s:,;(\-]+$/,"").trim();
+      // receipt line item: LABEL ........ CODE (or link) [x], then the creator's words and the expiry stamp
+      const target=code||link;
+      const text=ctx||(code&&link)?`<p class="hist-deal-text">${escapeHtml(ctx)}${code&&link?" "+link:""}</p>`:"";
       return `<div class="hist-deal-row${expiredCls}">
-        <span class="deal-badge">${escapeHtml(d.label)}</span>
-        <span class="hist-deal-text">${code} ${escapeHtml(ctx)}${link?" "+link:""}${exp}</span>
-        <button class="icon-btn danger hist-del" data-id="${escapeHtml(d.id)}" title="Remove" aria-label="Remove deal ${escapeHtml(d.code||d.label||"")}">${ICON_X}</button>
+        <div class="hist-li"><span class="deal-badge">${escapeHtml(d.label)}</span>${target?`<span class="leader" aria-hidden="true"></span>${target}`:""}<button class="icon-btn danger hist-del" data-id="${escapeHtml(d.id)}" title="Remove" aria-label="Remove deal ${escapeHtml(d.code||d.label||"")}">${ICON_X}</button></div>
+        ${text}${exp}
       </div>`;
     }).join("");
     return `<div class="hist-group">
       <div class="hist-group-head">
-        <span class="hist-group-chan">${ICON_TV} ${escapeHtml(g.channelName)}</span>
+        <div class="hist-group-meta"><span class="hist-group-chan">${escapeHtml(g.channelName)}</span><span class="hist-group-time">${fmtDate(g.detectedAt)} · ${g.deals.length} deal${g.deals.length>1?"s":""}</span></div>
         <a class="hist-group-vid" href="${escapeHtml(safeUrl(g.videoUrl))}" target="_blank" rel="noreferrer">${escapeHtml(g.videoTitle||"")}</a>
-        <span class="hist-group-time">${g.deals.length} deal${g.deals.length>1?"s":""} · ${fmtDate(g.detectedAt)}</span>
       </div>
       <div class="hist-deals">${rows}</div>
     </div>`;
