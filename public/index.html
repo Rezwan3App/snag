@@ -348,24 +348,33 @@
   .status.err{color:var(--bad)}
   .status.busy{color:var(--warn)}
 
-  /* HOW IT WORKS: what a creator typed, then what Snag prints from it */
-  .decode{padding:96px 0 88px;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:28px 72px;align-items:start}
-  .decode-intro{grid-column:1;min-width:0}
-  .decode-intro .sec-lead{margin-top:12px}
-  .decode-card{grid-column:1 / -1;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);align-items:start;margin-top:12px}
-  .decode-desc{
-    min-width:0;padding:26px 72px 30px 30px;border:1px solid var(--rule);
-    font-size:15px;line-height:1.75;color:var(--ink2);background:transparent;
+  /* HOW IT WORKS: the description is a strip of paper; the coupon is clipped from it */
+  .decode{
+    --cut:62px;padding:96px 0 88px;display:grid;
+    grid-template-columns:minmax(0,.9fr) minmax(0,1fr);
+    grid-template-areas:"desc intro" "desc out";grid-template-rows:auto 1fr;
+    gap:36px 88px;align-items:start;
   }
-  .decode-desc p+p{margin-top:12px}
+  .decode-card{display:contents}
+  .decode-intro{grid-area:intro;min-width:0;padding-top:28px}
+  .decode-intro .sec-lead{margin-top:12px}
+  .decode-desc{
+    grid-area:desc;align-self:stretch;position:relative;z-index:1;min-width:0;
+    padding:30px 40px 52px;background:var(--sheet);
+    font-size:17px;line-height:1.85;color:var(--ink2);
+    -webkit-mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50%/16px 100%;
+            mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50%/16px 100%;
+  }
+  .decode-desc p+p{margin-top:16px}
   .decode-desc mark{
     background:none;color:var(--ink);font-weight:600;
     text-decoration:underline;text-decoration-color:var(--stamp);text-decoration-thickness:2px;text-underline-offset:4px;
   }
-  .decode-label{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:14px}
-  .decode-arrow{display:none}
-  .decode-out{--notch:10px;--tear:62px;min-width:0;margin-top:56px;margin-left:-48px;position:relative;box-shadow:none;filter:drop-shadow(0 14px 20px rgba(20,25,32,.12))}
-  .decode-out .decode-label{height:62px;margin:0;padding:22px 26px 0}
+  .decode-label{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:16px}
+  .decode-arrow{grid-row:2;grid-column:1 / -1;align-self:start;margin-top:calc(var(--cut) - 1px);border-top:2px dashed var(--stamp)}
+  .decode-out{grid-area:out;--notch:10px;--tear:var(--cut);min-width:0;position:relative;z-index:1}
+  .decode-out .tear{border-top-color:var(--stamp)}
+  .decode-out .decode-label{height:var(--cut);margin:0;padding:22px 26px 0}
   .decode-out .rows{padding:18px 26px 24px;display:flex;flex-direction:column;gap:14px}
   .decode-out .hist-deal-row{display:flex;align-items:baseline;gap:10px}
   .decode-out .deal-link{text-decoration:none}
@@ -437,9 +446,9 @@
     .stub{margin:0 auto 0 0;transform:rotate(.8deg)}
     .ledger{grid-template-columns:1fr}
     #watched{border-bottom:1px solid var(--rule)}
-    .decode{grid-template-columns:1fr}
-    .decode-card{grid-template-columns:1fr}
-    .decode-desc{padding-right:30px}
+    .decode{grid-template-columns:minmax(0,1fr);grid-template-areas:"intro" "desc" "out";grid-template-rows:auto;gap:0}
+    .decode-intro{padding-top:0;margin-bottom:28px}
+    .decode-arrow{display:none}
     .decode-out{margin:-14px 0 0 18px}
   }
   @media(max-width:600px){
@@ -459,7 +468,7 @@
     .vid{grid-template-columns:28px minmax(0,1fr)}
     .preview-name{font-size:22px}
     .decode{padding:64px 0 56px}
-    .decode-desc{padding:20px}
+    .decode-desc{padding:20px 20px 36px;font-size:15px}
     .decode-out{margin:-12px 0 0 10px}
     .decode-out .rows,.decode-out .decode-label{padding-left:20px;padding-right:20px}
     #histList .hist-deal-row{flex-wrap:wrap}
