@@ -1,22 +1,24 @@
 # Snag
 
-**Find the promo codes and deals buried in YouTube videos, without watching the full thing.**
+Find the promo codes and deals buried in YouTube video descriptions, without watching the video.
 
 **Live demo:** [snag-2232.onrender.com](https://snag-2232.onrender.com) *(free tier, first load may take ~30s to wake up)*
 
-Creators drop discount codes in sponsor reads and video descriptions. Then the video scrolls out of your feed and the code is gone. Snag watches the channels you follow, scans every new upload's description, and pulls out the codes, sponsor links, and expiry dates. Add your phone number and it texts them to you.
-
 ![Snag homepage](docs/screenshot.png)
 
-## How it works
+**Contents:** [Architecture](#architecture) · [How a video becomes a text](#how-a-video-becomes-a-text) · [API](#api) · [Configuration](#configuration) · [Security](#security) · [Testing](#testing) · [Deploying](#deploying)
 
-1. Search for a YouTuber and add their channel to your watchlist.
-2. Snag reads the channel's RSS feed (no YouTube API key needed) and runs each video description through a set of promo-detection rules: `use code X`, `20% off`, free trials, giveaways, limited-time offers.
-3. Detected deals are saved with their code, sponsor link, and expiry date, and shown in the dashboard.
-4. New deals are texted to you via Twilio. Without Twilio credentials, Snag runs in demo mode and logs the message it would have sent.
-5. A background job re-scans every watched channel on an interval, so new uploads get caught automatically.
+## What it does
 
-## Running it locally
+- **Search a YouTuber.** Type a name and pick the channel from the results.
+- **Preview before you commit.** See the deals found in the channel's last 5 videos: codes, sponsor links, and expiry dates.
+- **Watch a channel and get texted.** Save a phone number and Snag texts you when a scan finds a new deal on a channel you watch. It re-scans every 30 minutes by default.
+- **Browse deal history.** Every saved deal shows its video, code, and link. Expired deals are marked and can be filtered out.
+- **Try it without Twilio.** If the Twilio variables are unset, Snag runs in demo mode: deals are still found and saved, and each text is logged to the server console instead of sent.
+
+Snag supports one subscriber phone number per instance.
+
+## Run it locally
 
 Requires [Bun](https://bun.sh).
 
@@ -25,57 +27,193 @@ bun install
 bun run dev
 ```
 
-Open http://localhost:4242.
+Open http://localhost:4242. Run the tests with `bun test`.
 
-Run the test suite with:
+## Architecture
 
-```sh
-bun test
+Snag is one Bun process running a Hono app. The same process serves the static page, the JSON API, and a background timer that rescans watched channels. All state lives in one SQLite file. The only outbound calls go to YouTube (a search-page scrape and the channel RSS feed) and to Twilio.
+
+```mermaid
+flowchart LR
+  Browser["Browser<br/>public/index.html"]
+  subgraph Server["server.ts"]
+    direction LR
+    CSRF["csrf"] --> Admin["admin gate on writes"] --> Routes["API routes"]
+    Static["serveStatic"]
+  end
+  Timer["Timer every<br/>SCAN_INTERVAL_MINUTES"]
+  Scanner["scanner.ts"]
+  Notify["notify.ts"]
+  DB[("db.ts<br/>snag.db")]
+  YTS["YouTube search"]
+  YTR["YouTube RSS"]
+  Twilio["Twilio"]
+  Phone["Phone"]
+
+  Browser -->|"/api/*"| CSRF
+  Browser -->|"static files"| Static
+  Routes -->|"search, preview, scan"| Scanner
+  Routes -->|"read, write"| DB
+  Routes -->|"welcome, test text"| Notify
+  Timer -->|"scan each channel"| Scanner
+  Scanner -->|"channel search"| YTS
+  Scanner -->|"latest videos"| YTR
+  Scanner -->|"save deals"| DB
+  Scanner -->|"text unseen deals"| Notify
+  Notify -->|"send SMS"| Twilio
+  Twilio --> Phone
+  Notify -->|"log send"| DB
 ```
 
-## Project layout
+### Project layout
 
 ```
 src/
-  server.ts        Hono app, routes, background auto-scan loop
-  scanner.ts        Channel search, RSS fetching, promo/expiry detection
-  db.ts              Tiny SQLite store (channels, deals, subscriber, notifications)
-  notify.ts          Phone validation, SMS copy, Twilio sending
-  scanner.test.ts    Unit tests (bun:test)
+  server.ts        Hono app, middleware, routes, spotlight cache, scan timer
+  scanner.ts       YouTube search scrape, RSS fetch, deal detection, scan and save
+  db.ts            SQLite schema and queries (bun:sqlite)
+  notify.ts        Phone handling, SMS text, Twilio send, hourly cap
+  *.test.ts        Tests for db, scanner and server
 public/
-  index.html         Frontend, single static file, no build step
+  index.html       The whole frontend: HTML, CSS and vanilla JS
+docs/
+  screenshot.png   Image used in this README
+render.yaml        Render deploy config
+```
+
+### Design decisions
+
+- **One subscriber.** The `subscriber` table has `CHECK (id = 1)`, so it holds at most one row. Multi-user support means a schema change.
+- **No build step.** The frontend is a single `index.html` with vanilla JS, served as is. Bun runs the TypeScript directly.
+- **No YouTube API key.** Channel search scrapes the search results page and videos come from the public RSS feed. Both can break if YouTube changes its markup.
+- **State that resets on restart.** The spotlight cache (10 minutes) and the SMS hourly cap (`SMS_MAX_PER_HOUR`, default 20) are in memory only.
+
+## How a video becomes a text
+
+```mermaid
+flowchart TD
+    A["scanChannelAndSave"] --> B["fetchRssVideos: last 5 videos<br/>channel id must match UC + 22 chars<br/>up to 6 attempts, 10s timeout each"]
+    B --> C["detectDeals on each description"]
+    C --> D{"dealExists for this video?"}
+    D -- yes --> S["skip it"]
+    D -- no --> E["addDeal: save to SQLite"]
+    E --> F{"expired or already seen<br/>for this channel?"}
+    F -- yes --> G["history only"]
+    F -- no --> H["notifyMissedDeals"]
+    H --> I{"send failed or<br/>hourly cap hit?"}
+    I -- yes --> J["removeDeal for this scan's saved deals<br/>retried next scan"]
+    I -- no --> K["done"]
+```
+
+`detectDeals` works in this order:
+
+1. Return nothing for an empty description.
+2. `findPartnerListDeals` reads the first block under a "Channel Partners" or "Our Sponsors" header and makes a "Sponsor" deal for each "Name - text: link" line, skipping social domains.
+3. `parseExpiry` finds one date near a trigger word such as "ends" or "until". `validDate` rejects impossible dates like Feb 30.
+4. `PROMO_RULES` run in order: promo code, discount code, discount, free trial, giveaway, limited offer, exclusive deal, sponsor.
+5. `findDealUrl` pairs each match with a link on the same line, else the nearest within 300 characters. A "Sponsor" match with no link is dropped.
+6. Codes must already be uppercase, so "code below" is ignored.
+7. Dedupe by code or context, keeping code-bearing deals first.
+
+### Known limits
+
+The rules are regex heuristics, so they miss unusual phrasing and can match the wrong text. One expiry date is applied to every deal in a description. While Twilio keeps failing, new deals are deleted from history and will not appear there until a send succeeds. `previewChannel` never saves or texts.
+
+## API
+
+| Method | Path | What it does | Request body | Texts? |
+|---|---|---|---|---|
+| GET | `/api/search?q=` | Channel suggestions for a name (needs 2+ characters) | | |
+| GET | `/api/channel/:id/preview` | Last 5 videos of a channel with detected deals, read-only | | |
+| GET | `/api/spotlight` | Up to 12 recent deals from a fixed set of well-known channels, read-only | | |
+| GET | `/api/deals` | Saved deals | | |
+| DELETE | `/api/deals/:id` | Remove a deal | | |
+| GET | `/api/channels` | Watched channels | | |
+| POST | `/api/channels` | Watch a channel, scan it, return `newDeals` | `{ id, name?, thumbnail? }` | can |
+| DELETE | `/api/channels/:id` | Stop watching a channel | | |
+| POST | `/api/channels/:id/scan` | Scan one channel now (optional `?name=`) | | can |
+| GET | `/api/sms` | Subscriber state, masked phone, whether SMS and the admin gate are on | | |
+| POST | `/api/sms/subscribe` | Save the number and send a welcome text | `{ phone }` | yes |
+| POST | `/api/sms/toggle` | Turn alerts on or off | `{ enabled }` | |
+| DELETE | `/api/sms` | Remove the subscriber | | |
+| POST | `/api/sms/test` | Send a test text with the latest deals | | yes |
+
+Notes:
+
+- Every non-GET route goes through the admin gate (see Security).
+- Writes must come from the page's own origin; other sites are rejected by the CSRF check.
+- Errors are JSON `{ error }` with a 4xx or 5xx status.
+- `/api/spotlight` is cached for 10 minutes, and concurrent requests share one fetch.
+
+```sh
+curl -X POST http://localhost:4242/api/channels \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Origin: http://localhost:4242" \
+  -H "Content-Type: application/json" \
+  -d '{ "id": "UCXuqSBlHAE6Xw-yeJA0Tunw" }'
 ```
 
 ## Configuration
 
-All optional, via environment variables:
-
-| Variable | Purpose | Default |
+| Variable | Default | What it does |
 |---|---|---|
-| `PORT` | Server port | `4242` |
-| `SCAN_INTERVAL_MINUTES` | How often watched channels are re-scanned | `30` |
-| `SNAG_DB_PATH` | Path to the SQLite database file | `./snag.db` |
-| `TWILIO_ACCOUNT_SID` | Twilio credentials for real SMS | demo mode |
-| `TWILIO_AUTH_TOKEN` | Twilio auth token | demo mode |
-| `TWILIO_FROM_NUMBER` | Sending phone number | demo mode |
-| `ADMIN_TOKEN` | Bearer token required on every non-GET API call. Required when Twilio is configured (changes are rejected without it); unset in demo mode leaves the API open | unset |
-| `SMS_MAX_PER_HOUR` | Cap on real texts sent per hour, so the open API can't run up your Twilio bill | `20` |
+| `PORT` | `4242` | Port the HTTP server listens on. |
+| `SCAN_INTERVAL_MINUTES` | `30` | Minutes between background scans of watched channels. |
+| `SNAG_DB_PATH` | `./snag.db` | Path of the SQLite database file. |
+| `TWILIO_ACCOUNT_SID` | unset | Twilio account SID. |
+| `TWILIO_AUTH_TOKEN` | unset | Twilio auth token. |
+| `TWILIO_FROM_NUMBER` | unset | Twilio sender number. All three Twilio variables must be set to send real texts. Otherwise texts are only logged (demo mode). |
+| `ADMIN_TOKEN` | unset | Bearer token required for all write requests (see Security). |
+| `SMS_MAX_PER_HOUR` | `20` | Cap on real texts sent per rolling hour. An invalid or negative value falls back to 20. `0` blocks all real sends. |
 
-## Stack
+## Security
 
-- [Bun](https://bun.sh) runtime with a [Hono](https://hono.dev) server
-- Vanilla HTML/CSS/JS frontend in `public/`, no build step, no framework
-- SQLite storage via Bun's built-in `bun:sqlite` (`snag.db`, created at runtime and gitignored), no external database, no ORM
-- YouTube channel RSS feeds for video data, YouTube search scraping for channel lookup
+Write requests (anything but GET) pass through this gate:
 
-## Deploying your own
+| `ADMIN_TOKEN` | Twilio | Result |
+|---|---|---|
+| unset | unset | Writes are open. This is demo mode, and texts are only logged. |
+| unset | set | All writes get 401 until a token is set on the server. |
+| set | any | Writes need `Authorization: Bearer <token>`. The page prompts for the token once and keeps it in `localStorage`. |
 
-Snag is a server app (it scans in the background and sends texts), so it needs a host that runs a process. Render, Railway, or Fly.io free tiers all work; static hosts like GitHub Pages can't run it.
+- `SMS_CONFIGURED` is read once at startup, so restart the server after adding Twilio keys.
+- `csrf()` guards `/api/*`, and the server sends no CORS headers. The frontend is same-origin.
+- The page runs every server value through `escapeHtml` and every link through `safeUrl`, which allows only `http` and `https`.
+- Channel ids must match `UC` plus 22 characters (`[\w-]`). Avatar URLs must start with `https://yt3.ggpht.com/` or `https://yt3.googleusercontent.com/`, otherwise no avatar is stored.
+- Phone numbers are masked in API responses.
+- Real texts are capped at `SMS_MAX_PER_HOUR` (the counter is in memory and resets on restart), and each body is cut to 1600 characters.
+- Snag stores exactly one subscriber. On a public deploy with real SMS, only the owner (the token holder) should subscribe.
+
+## Testing
+
+```
+bun test
+```
+
+There are three test files in `src/`:
+
+- `db.test.ts` covers the SQLite layer: channels, deals, scanned videos, the subscriber, notifications, and persistence across reopened files.
+- `scanner.test.ts` covers deal detection, RSS fetching with retries, phone normalizing and masking, SMS text and sending, texting after a scan, subscriber-count parsing, and channel search ranking.
+- `server.test.ts` covers the admin token: GET requests pass, and non-GET requests need the right bearer token.
+
+Tests that touch the network replace `fetch` with a stub, and the database tests use temporary SQLite files that are deleted afterward, so `bun test` makes no network calls. End-to-end browser tests are not in the repo yet.
+
+## Deploying
+
+Snag needs a host that keeps one process running. It scans in the background and sends texts, so static hosts like GitHub Pages will not work.
 
 A [render.yaml](render.yaml) blueprint is included. On Render:
 
 1. Create an account at [render.com](https://render.com) and connect your GitHub.
-2. Click **New → Blueprint**, pick this repo, and deploy.
-3. (Optional) Add the three Twilio environment variables to send real texts.
+2. Click **New > Blueprint**, pick this repo, and deploy.
+3. Set `ADMIN_TOKEN` (any long random string) together with `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_FROM_NUMBER`. Without Twilio, Snag runs in demo mode. Once Twilio is on, `ADMIN_TOKEN` is required or all changes are rejected.
 
-Free-tier notes: the service sleeps after 15 minutes of inactivity (background scans pause while asleep), and the SQLite file resets on restarts since free instances have no persistent disk. That's true of any local file, not specific to SQLite. Fine for a demo; for data that needs to survive restarts, add a Render persistent disk (paid) or point `SNAG_DB_PATH` at one, or swap in a hosted database.
+Free-tier notes:
+
+- The service sleeps after 15 minutes idle, so background scans pause while it sleeps.
+- The SQLite file resets on restart.
+- To keep data, add a persistent disk (paid) and point `SNAG_DB_PATH` at it, or use a hosted database.
+
+## Why not serverless (Vercel)
+
+The `setInterval` scan loop and the local SQLite file both assume one long-lived process. On Vercel you would replace the timer with a Vercel Cron Job that calls a scan endpoint (today the API only scans one channel per request, so you would add one that scans all). You would also replace the file with a hosted database such as Turso or Postgres. Render, Railway, and Fly run Snag unchanged.
