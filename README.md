@@ -18,6 +18,18 @@ Find the promo codes and deals buried in YouTube video descriptions, without wat
 
 Snag supports one subscriber phone number per instance.
 
+## Screenshots
+
+| Channel preview | Your alerts and deal history |
+|---|---|
+| ![Channel preview: the last 5 videos of Linus Tech Tips with the deals found in each](docs/channel-preview.png) | ![Watched channels, text alerts, and deal history laid out as saved receipts](docs/alerts-and-history.png) |
+| **How it works** | **Dark mode (opt in from the nav)** |
+| ![A raw video description with the deal phrases underlined, next to the coupon Snag prints from it](docs/how-it-works.png) | ![The homepage in dark mode](docs/dark-mode.png) |
+
+<p align="center"><img src="docs/mobile.png" alt="The homepage on a phone" width="300"></p>
+
+Light is the default. Dark mode only turns on when you pick it with the moon icon in the nav, and the choice is remembered in that browser.
+
 ## Run it locally
 
 Requires [Bun](https://bun.sh).

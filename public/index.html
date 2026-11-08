@@ -38,29 +38,8 @@
     --ease:cubic-bezier(.2,.8,.2,1);
     color-scheme:light;
   }
-  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
-    --paper:#0d1014;
-    --sheet:#171b21;
-    --ink:#e3e7ec;
-    --ink2:#b2bbc6;
-    --muted:#939dab;
-    --rule:#3a4350;
-    --rule-soft:#272e37;
-    --stamp:#f0717c;
-    --stamp-fill:#c22f3d;
-    --stamp-press:#a8283a;
-    --on-stamp:#fff;
-    --good:#6cc596;
-    --good-fill:#2f8a5c;
-    --on-good:#fff;
-    --warn:#e3b55a;
-    --bad:#f08a95;
-    --shadow:0 0 0 1px rgba(160,175,195,.07),0 18px 36px -14px rgba(0,0,0,.7);
-    --toast-bg:#e3e7ec;
-    --toast-ink:#0d1014;
-    --nav-bg:rgba(13,16,20,.92);
-    color-scheme:dark;
-  }}
+  /* Light is the default for everyone. Dark only applies when the visitor
+     picks it with the nav toggle (saved in localStorage as snagTheme). */
   :root[data-theme="dark"]{
     --paper:#0d1014;
     --sheet:#171b21;
@@ -111,6 +90,11 @@
   .brand-tag{font-family:var(--mono);font-size:12px;color:var(--muted)}
   .nav-link{font-size:14px;font-weight:600;color:var(--ink2);text-decoration:none;padding:8px 12px;transition:color .15s}
   .nav-link:hover{color:var(--stamp);text-decoration:underline;text-underline-offset:4px}
+  .theme-btn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:none;border:0;color:var(--ink2);cursor:pointer;transition:color .15s}
+  .theme-btn:hover{color:var(--stamp)}
+  .theme-btn .sun,[data-theme="dark"] .theme-btn .moon{display:none}
+  [data-theme="dark"] .theme-btn .sun{display:block}
+  @media (pointer:coarse){.theme-btn{width:44px;height:44px}}
 
   /* HERO: asymmetric. Words and the search on the left; on the right, a real
      coupon Snag pulled from a real video description. */
@@ -519,6 +503,7 @@
     .hist-group-vid,.hist-group-vid:visited{padding-block:10px;margin-block:-4px -10px}
   }
 </style>
+<script>try{if(localStorage.getItem("snagTheme")==="dark")document.documentElement.dataset.theme="dark"}catch{}</script>
 </head>
 <body>
 
@@ -529,7 +514,19 @@
   </a>
   <a class="nav-link" href="#how">How it works</a>
   <a class="nav-link" href="#watched">My alerts</a>
+  <button type="button" class="theme-btn" id="themeBtn" aria-label="Dark mode" aria-pressed="false">
+    <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"/></svg>
+    <svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7"/></svg>
+  </button>
 </nav>
+<script>
+// Theme toggle. The saved choice is applied in <head> before first paint.
+(()=>{const b=document.getElementById("themeBtn"),r=document.documentElement;
+  const sync=()=>b.setAttribute("aria-pressed",String(r.dataset.theme==="dark"));sync();
+  b.addEventListener("click",()=>{const dark=r.dataset.theme!=="dark";
+    if(dark)r.dataset.theme="dark";else delete r.dataset.theme;
+    try{localStorage.setItem("snagTheme",dark?"dark":"light")}catch{}sync();});})();
+</script>
 
 <main>
 
