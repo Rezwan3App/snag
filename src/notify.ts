@@ -46,7 +46,7 @@ export function buildDealSms(deals: DealLike[]): string {
   for (const [videoUrl, vidDeals] of byVideo) {
     const first = vidDeals[0];
     const lines: string[] = [];
-    lines.push(`🎯 ${first.channelName} — deals you'd have missed:`);
+    lines.push(`🎯 ${first.channelName}: deals you'd have missed`);
     lines.push(`📺 ${truncate(first.videoTitle, 60)}`);
 
     for (const d of vidDeals.slice(0, 4)) {
@@ -90,7 +90,7 @@ export async function sendSms(to: string, body: string): Promise<SendResult> {
   const token = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_FROM_NUMBER;
 
-  // Demo mode — no provider configured. Log it so the UI can show what *would* send.
+  // Demo mode: no provider configured. Log it so the UI can show what *would* send.
   if (!sid || !token || !from) {
     console.log(`[Snag SMS · DEMO] → ${to}\n${body}\n`);
     return { mode: "demo", ok: true };
