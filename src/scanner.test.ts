@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { detectDeals, fetchRssXml, scanChannelAndSave } from "./scanner";
+import { detectDeals, fetchRssXml, scanChannelAndSave, parseSubscriberCount, searchChannels } from "./scanner";
 import { db } from "./db";
 import { normalizePhone, maskPhone, buildDealSms, sendSms } from "./notify";
 
@@ -340,5 +340,46 @@ describe("scanChannelAndSave texting", () => {
     const retry = await run(xml);
     expect(retry.texts.length).toBe(1);
     expect(retry.texts[0]).toContain("RETRY1");
+describe("parseSubscriberCount", () => {
+  test("parses suffixes and edge cases", () => {
+    expect(parseSubscriberCount("21.4M subscribers")).toBe(21400000);
+    expect(parseSubscriberCount("46 subscribers")).toBe(46);
+    expect(parseSubscriberCount("1.2K")).toBe(1200);
+    expect(parseSubscriberCount("1 subscriber")).toBe(1);
+    expect(parseSubscriberCount("No subscribers")).toBe(0);
+    expect(parseSubscriberCount("")).toBe(0);
+    expect(parseSubscriberCount("@mkbhd")).toBe(0);
+  });
+});
+
+describe("searchChannels ranking", () => {
+  test("big channel first, tiny impostor dropped", async () => {
+    const mk = (channelId: string, title: string, handle: string, subs: string) => ({
+      channelRenderer: {
+        channelId,
+        title: { simpleText: title },
+        subscriberCountText: { simpleText: handle },
+        videoCountText: { simpleText: subs },
+        thumbnail: { thumbnails: [{ url: "//img/x.jpg" }] },
+      },
+    });
+    const data = {
+      contents: { twoColumnSearchResultsRenderer: { primaryContents: { sectionListRenderer: { contents: [
+        { itemSectionRenderer: { contents: [
+          mk("UCfake", "MKBHD", "@fake", "46 subscribers"),
+          mk("UCreal", "Marques Brownlee", "@mkbhd", "21.4M subscribers"),
+        ] } },
+      ] } } } },
+    };
+    const orig = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(`<script>var ytInitialData = ${JSON.stringify(data)};</script>`)) as unknown as typeof fetch;
+    try {
+      const r = await searchChannels("MKBHD");
+      expect(r.map((x) => x.id)).toEqual(["UCreal"]);
+      expect(r[0].subscribers).toBe("21.4M subscribers");
+    } finally {
+      globalThis.fetch = orig;
+    }
   });
 });
